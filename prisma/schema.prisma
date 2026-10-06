@@ -39,13 +39,13 @@ enum DayOfWeek {
 }
 
 model User {
-  id        String     @id @default(uuid())
-  phone     String     @unique
-  firstName String?
-  lastName  String?
-  password  String?
-  role      UserRole   @default(CUSTOMER)
-  status    UserStatus @default(ACTIVE)
+  id               String     @id @default(uuid())
+  phone            String     @unique
+  firstName        String?
+  lastName         String?
+  refreshTokenHash String?
+  role             UserRole   @default(CUSTOMER)
+  status           UserStatus @default(ACTIVE)
 
   customer Customer?
   barber   Barber?
@@ -55,6 +55,19 @@ model User {
 
   @@index([role])
   @@index([status])
+}
+
+model OtpCode {
+  id        String    @id @default(uuid())
+  phone     String
+  codeHash  String
+  expiresAt DateTime
+  attempts  Int       @default(0)
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([phone, createdAt])
+  @@index([expiresAt])
 }
 
 model Salon {
