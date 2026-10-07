@@ -12,6 +12,7 @@ import { UsersService } from '../users/users.service.js';
 
 import { RequestOtpDto } from './dto/request-otp.dto.js';
 import { VerifyOtpDto } from './dto/verify-otp.dto.js';
+import { JwtExpiresIn } from './types/type.js';
 
 @Injectable()
 export class AuthService {
@@ -73,13 +74,15 @@ export class AuthService {
         const accessToken =
             await this.jwtService.signAsync(payload);
 
-        const refreshToken =
-            await this.jwtService.signAsync(payload, {
-                secret: this.configService.getOrThrow<string>(
-                    'JWT_REFRESH_SECRET',
-                ),
-                expiresIn: '7d',
-            });
+      const refreshToken =
+        await this.jwtService.signAsync(payload, {
+          secret: this.configService.getOrThrow<string>(
+            'JWT_REFRESH_SECRET',
+          ),
+          expiresIn: this.configService.getOrThrow<string>(
+            'JWT_REFRESH_EXPIRES_IN',
+          ) as JwtExpiresIn,
+        });
 
         const refreshTokenHash =
             await bcrypt.hash(refreshToken, 10);
