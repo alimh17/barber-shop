@@ -10,6 +10,19 @@ import { UsersController } from './users/users.controller.js';
 import { UsersModule } from './users/users.module.js';
 import { OtpModule } from './otp/otp.module.js';
 import { AuthModule } from './auth/auth.module.js';
+import { SalonsService } from './salons/salons.service.js';
+import { SalonsController } from './salons/salons.controller.js';
+import { SalonsModule } from './salons/salons.module.js';
+import { BarbersController } from './barbers/barbers.controller.js';
+import { BarbersService } from './barbers/barbers.service.js';
+import { BarbersModule } from './barbers/barbers.module.js';
+import { ServicesController } from './services/services.controller.js';
+import { ServicesService } from './services/services.service.js';
+import { ServicesModule } from './services/services.module.js';
+import { BarberServicesModule } from './barber-services/barber-services.module.js';
+import { WorkingHoursController } from './schedules/working-hours.controller.js';
+import { WorkingHoursService } from './schedules/working-hours.service.js';
+import { SchedulesModule } from './schedules/schedules.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -29,9 +42,14 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     HealthModule,
     UsersModule,
     OtpModule,
-    AuthModule
+    AuthModule,
+    SalonsModule,
+    BarbersModule,
+    ServicesModule,
+    BarberServicesModule,
+    SchedulesModule
   ],
-  controllers: [AppController, UsersController],
-  providers: [AppService],
+  controllers: [AppController, UsersController, SalonsController, BarbersController, ServicesController, WorkingHoursController],
+  providers: [AppService, SalonsService, BarbersService, ServicesService, WorkingHoursService],
 })
 export class AppModule {}
