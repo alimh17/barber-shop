@@ -25,6 +25,7 @@ import { WorkingHoursService } from './schedules/working-hours.service.js';
 import { SchedulesModule } from './schedules/schedules.module.js';
 import { AppointmentsController } from './appointments/appointments.controller.js';
 import { AppointmentsModule } from './appointments/appointments.module.js';
+import { AvailabilityModule } from './availability/availability.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -50,7 +51,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     ServicesModule,
     BarberServicesModule,
     SchedulesModule,
-    AppointmentsModule
+    AppointmentsModule,
+    AvailabilityModule
   ],
   controllers: [AppController, UsersController, SalonsController, BarbersController, ServicesController, WorkingHoursController, AppointmentsController],
   providers: [AppService, SalonsService, BarbersService, ServicesService, WorkingHoursService],
