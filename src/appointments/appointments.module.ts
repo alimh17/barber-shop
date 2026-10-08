@@ -4,9 +4,10 @@ import { AuthModule } from '../auth/auth.module.js';
 
 import { AppointmentsController } from './appointments.controller.js';
 import { AppointmentsService } from './appointments.service.js';
+import { AvailabilityModule } from '../availability/availability.module.js';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule , AvailabilityModule],
 
   controllers: [
     AppointmentsController,

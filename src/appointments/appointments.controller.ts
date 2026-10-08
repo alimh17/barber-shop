@@ -1,6 +1,5 @@
 import {
   Body,
-  ConflictException,
   Controller,
   Delete,
   Get,
@@ -10,7 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import { AppointmentStatus, UserRole } from '../generated/prisma/client.js';
+import { UserRole } from '../generated/prisma/client.js';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
@@ -77,36 +76,6 @@ export class AppointmentsController {
     @Param('id') id: string,
     @Body() dto: UpdateAppointmentStatusDto,
   ) {
-    const allowedTransitions: Record<
-      AppointmentStatus,
-      AppointmentStatus[]
-    > = {
-      [AppointmentStatus.PENDING]: [
-        AppointmentStatus.CONFIRMED,
-        AppointmentStatus.CANCELLED,
-      ],
-
-      [AppointmentStatus.CONFIRMED]: [
-        AppointmentStatus.COMPLETED,
-        AppointmentStatus.CANCELLED,
-        AppointmentStatus.NO_SHOW,
-      ],
-
-      [AppointmentStatus.COMPLETED]: [],
-
-      [AppointmentStatus.CANCELLED]: [],
-
-      [AppointmentStatus.NO_SHOW]: [],
-    };
-    const allowed =
-      allowedTransitions[appointment.status];
-
-    if (!allowed.includes(dto.status)) {
-      throw new ConflictException(
-        `Cannot change appointment status from ${appointment.status} to ${dto.status}`,
-      );
-    }
-
     return this.appointmentsService.updateStatus(
       id,
       dto,
