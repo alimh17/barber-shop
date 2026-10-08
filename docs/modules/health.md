@@ -2,17 +2,18 @@
 
 ## Purpose
 
-The `Health` module provides a simple endpoint for checking whether the API application is running correctly.
+The `Health` module provides an endpoint for checking whether the API application is running and whether the PostgreSQL database is reachable.
 
 It is primarily intended for:
 
 * Application health checks
+* PostgreSQL connectivity checks
 * Docker/container health checks
 * Load balancer health checks
 * Monitoring systems
-* Verifying that the NestJS application is responding
+* Infrastructure diagnostics
 
-The Health module does **not** check business functionality such as authentication, appointments, database records, or external services unless those checks are explicitly added later.
+The Health module does not contain business logic related to authentication, salons, barbers, services, or appointments.
 
 ---
 
@@ -21,10 +22,9 @@ The Health module does **not** check business functionality such as authenticati
 The Health module is responsible for:
 
 1. Exposing a health-check HTTP endpoint.
-2. Returning a successful response when the API process is running.
-3. Providing a stable endpoint that infrastructure and monitoring systems can use.
-
-It should remain lightweight and should not contain business logic.
+2. Verifying that the API can communicate with PostgreSQL.
+3. Returning the current health status of the application.
+4. Providing a stable endpoint for infrastructure and monitoring systems.
 
 ---
 
@@ -32,12 +32,22 @@ It should remain lightweight and should not contain business logic.
 
 The Health module does not have its own database model.
 
-It does not create or modify any PostgreSQL/Prisma records.
+It does not create or modify application records.
+
+However, it uses `PrismaService` to verify database connectivity by executing:
+
+```sql
+SELECT 1
+```
+
+Therefore, the module has a dependency on the application's Prisma/database layer.
 
 ```text
 Health Module
      │
-     └── No database model
+     └── PrismaService
+             │
+             └── PostgreSQL
 ```
 
 ---
@@ -46,15 +56,25 @@ Health Module
 
 ### GET /api/health
 
-Returns the current health status of the API.
+Returns the health status of the API and PostgreSQL connection.
 
-Because the application uses:
+The application uses the global prefix:
 
 ```ts
 app.setGlobalPrefix('api');
 ```
 
-the controller route is exposed under the `/api` prefix.
+Therefore, the Health controller route:
+
+```ts
+@Controller('health')
+```
+
+is exposed as:
+
+```text
+GET /api/health
+```
 
 ### Example Request
 
@@ -66,11 +86,13 @@ GET /api/health
 
 ```json
 {
-  "status": "ok"
+  "status": "ok",
+  "database": "connected",
+  "timestamp": "2026-10-08T20:30:00.000Z"
 }
 ```
 
-The exact response shape should always follow the current implementation of `HealthController`.
+The `timestamp` value is generated at request time.
 
 ---
 
@@ -82,59 +104,85 @@ A monitoring service can periodically request:
 GET /api/health
 ```
 
-If the API responds successfully:
-
-```http
-200 OK
-```
-
-the application can be considered reachable.
-
-For example:
+The request follows this flow:
 
 ```text
 Monitoring
     │
     │ GET /api/health
     ▼
-NestJS API
+HealthController
     │
-    │ 200 OK
     ▼
-Monitoring
+HealthService
     │
-    └── API is reachable
+    │ SELECT 1
+    ▼
+PostgreSQL
+    │
+    │ Success
+    ▼
+HealthService
+    │
+    ▼
+{
+  status: "ok",
+  database: "connected",
+  timestamp: "..."
+}
 ```
 
-If the API process is unavailable or cannot respond, the health check fails.
+If the database query succeeds, the endpoint returns a successful health response.
+
+If PostgreSQL is unavailable or the database query fails, the health check will fail instead of returning a normal healthy response.
 
 ---
 
 ## How It Works
 
-The Health module is registered in the application's root module:
+The Health module contains two main components:
 
 ```text
-AppModule
+HealthModule
     │
-    └── HealthModule
-            │
-            └── HealthController
-                    │
-                    └── GET /api/health
+    ├── HealthController
+    │
+    └── HealthService
 ```
 
-When a request is sent to:
+### HealthController
+
+`HealthController` exposes:
 
 ```text
-/api/health
+GET /api/health
 ```
 
-NestJS routes the request to the Health controller.
+The controller delegates the health check to `HealthService`.
 
-The controller returns a lightweight response without executing any business operation.
+It does not contain database logic itself.
 
-This makes the endpoint suitable for frequent automated health checks.
+### HealthService
+
+`HealthService` depends on `PrismaService`.
+
+When `check()` is called, it executes:
+
+```ts
+await this.prisma.$queryRaw`SELECT 1`;
+```
+
+This verifies that the application can successfully communicate with PostgreSQL.
+
+After a successful query, the service returns:
+
+```ts
+{
+  status: 'ok',
+  database: 'connected',
+  timestamp: new Date().toISOString(),
+}
+```
 
 ---
 
@@ -142,32 +190,36 @@ This makes the endpoint suitable for frequent automated health checks.
 
 The Health module intentionally has very few rules.
 
-### 1. It must be lightweight
+### 1. The endpoint should remain lightweight
 
-The endpoint should respond quickly and avoid unnecessary operations.
+The health check should perform only the minimum operations necessary to determine application/database health.
 
-### 2. It should not require authentication
+### 2. Database connectivity must be verified
 
-The health endpoint is intended to be accessible by infrastructure and monitoring systems.
+The current implementation considers PostgreSQL connectivity part of the health check.
 
-Therefore, it should normally remain outside authenticated application flows.
+The query:
 
-### 3. It should not modify data
+```sql
+SELECT 1
+```
 
-A health check must never create, update, or delete application data.
+is used because it is a minimal database operation.
 
-### 4. It should not contain business logic
+### 3. The endpoint should not modify data
+
+The health check must never create, update, or delete application records.
+
+### 4. The endpoint should not contain business logic
 
 Business-specific checks belong in their respective modules.
 
 For example:
 
-* Authentication health → `AuthModule`
-* Database connectivity → infrastructure/health checks
+* Authentication → `AuthModule`
 * Appointment availability → `AvailabilityModule`
-* Appointment status → `AppointmentsModule`
-
-If the project later requires a more advanced health check, database or dependency checks should be added deliberately rather than putting business logic into the Health module.
+* Appointment management → `AppointmentsModule`
+* Salon management → `SalonsModule`
 
 ---
 
@@ -181,25 +233,38 @@ If the project later requires a more advanced health check, database or dependen
 AppModule
    │
    └── HealthModule
+           │
+           ├── HealthController
+           └── HealthService
 ```
 
 ### PrismaModule
 
-The current basic health endpoint does not require Prisma.
+`HealthService` depends on `PrismaService`.
 
-If a future version needs to verify database connectivity, `PrismaModule` may become a dependency of the health-check implementation.
+```text
+HealthService
+      │
+      ▼
+PrismaService
+      │
+      ▼
+PostgreSQL
+```
+
+This dependency allows the Health module to verify database connectivity.
 
 ### Docker / Infrastructure
 
-The endpoint can be used by Docker, reverse proxies, load balancers, or monitoring systems to determine whether the API process is responding.
+The endpoint can be used by Docker, reverse proxies, load balancers, and monitoring systems to determine whether the API and its database dependency are available.
 
 ---
 
 ## Future Improvements
 
-The current Health module is intentionally simple.
+As the application grows, the health system may be extended to check additional dependencies.
 
-As the system grows, it may be extended to distinguish between:
+For example:
 
 ```text
 Application Health
@@ -211,15 +276,13 @@ Application Health
         └── Other external dependencies
 ```
 
-For example, a future health response could expose separate statuses for application dependencies.
-
-These checks should only be introduced when they are actually required by the deployment and monitoring architecture.
+If additional infrastructure dependencies are introduced, they should be added deliberately without turning the Health module into a place for business logic.
 
 ---
 
 ## Summary
 
-The Health module provides the simplest infrastructure-level entry point into the application:
+The Health module provides an infrastructure-level endpoint for checking both API availability and PostgreSQL connectivity.
 
 ```text
 GET /api/health
@@ -228,9 +291,22 @@ GET /api/health
  HealthController
         │
         ▼
-   Health Response
+ HealthService
+        │
+        ▼
+ PrismaService
+        │
+        ▼
+ PostgreSQL
+        │
+        ▼
+ Health Response
 ```
 
-Its primary purpose is to answer one question:
+Its primary purpose is to answer two questions:
 
-> Is the API application currently reachable and responding?
+> Is the API responding?
+
+and:
+
+> Can the API communicate with PostgreSQL?
