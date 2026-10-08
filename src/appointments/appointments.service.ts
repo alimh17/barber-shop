@@ -7,10 +7,10 @@ import {
 
 import {
   AppointmentStatus,
+  Prisma,
 } from '../generated/prisma/client.js';
-
 import { PrismaService } from '../prisma/prisma.service.js';
-
+import { AvailabilityService } from '../availability/availability.service.js';
 import { CreateAppointmentDto } from './dto/create-appointment.dto.js';
 import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto.js';
 
@@ -18,7 +18,8 @@ import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto.
 export class AppointmentsService {
   constructor(
     private readonly prisma: PrismaService,
-  ) {}
+    private readonly availabilityService: AvailabilityService,
+  ) { }
 
   async create(
     userId: string,
@@ -111,15 +112,52 @@ export class AppointmentsService {
       );
     }
 
-    const endAt = new Date(
-      startAt.getTime() +
-      service.duration * 60 * 1000,
-    );
+    if (service.duration <= 0) {
+      throw new ConflictException(
+        'Service duration must be greater than zero',
+      );
+    }
 
+    /*
+     * Validate:
+     *
+     * - salon
+     * - barber
+     * - service
+     * - barber service
+     * - working hours
+     * - day off
+     * - appointment duration inside working hours
+     *
+     * The returned endAt is calculated from the
+     * actual service duration.
+     */
+    const slotValidation =
+      await this.availabilityService.validateBookingSlot({
+        salonId: barber.salonId,
+        barberId: barber.id,
+        serviceId: service.id,
+        startAt,
+      });
+
+    const endAt = slotValidation.endAt;
+
+    /*
+     * Check for an existing appointment.
+     *
+     * Overlap rule:
+     *
+     * newStart < existingEnd
+     * &&
+     * newEnd > existingStart
+     *
+     * CANCELLED / COMPLETED / NO_SHOW appointments
+     * don't block a new booking.
+     */
     const overlappingAppointment =
       await this.prisma.appointment.findFirst({
         where: {
-          barberId: dto.barberId,
+          barberId: barber.id,
 
           status: {
             in: [
@@ -143,59 +181,71 @@ export class AppointmentsService {
         'Barber is already booked during this time',
       );
     }
+    try {
+      return await this.prisma.appointment.create({
+        data: {
+          salonId: barber.salonId,
 
-    return this.prisma.appointment.create({
-      data: {
-        salonId: barber.salonId,
+          customerId: customer.id,
 
-        customerId: customer.id,
+          barberId: dto.barberId,
+          serviceId: dto.serviceId,
 
-        barberId: dto.barberId,
-        serviceId: dto.serviceId,
+          startAt,
+          endAt,
 
-        startAt,
-        endAt,
+          price: service.price,
+          duration: service.duration,
 
-        price: service.price,
-        duration: service.duration,
+          status: AppointmentStatus.PENDING,
 
-        status: AppointmentStatus.PENDING,
+          note: dto.note,
+        },
 
-        note: dto.note,
-      },
-
-      include: {
-        customer: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                phone: true,
-                firstName: true,
-                lastName: true,
-                role: true,
+        include: {
+          customer: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  phone: true,
+                  firstName: true,
+                  lastName: true,
+                  role: true,
+                },
               },
             },
           },
-        },
 
-        barber: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                phone: true,
-                firstName: true,
-                lastName: true,
-                role: true,
+          barber: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  phone: true,
+                  firstName: true,
+                  lastName: true,
+                  role: true,
+                },
               },
             },
           },
-        },
 
-        service: true,
-      },
-    });
+          service: true,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2004'
+      ) {
+        throw new ConflictException(
+          'Barber is already booked during this time',
+        );
+      }
+
+      throw error;
+    }
   }
 
   async findById(id: string) {
@@ -284,6 +334,7 @@ export class AppointmentsService {
         },
 
         service: true,
+        salon: true,
       },
     });
   }
@@ -305,23 +356,103 @@ export class AppointmentsService {
       );
     }
 
+    /*
+     * Allowed state transitions:
+     *
+     * PENDING
+     *   -> CONFIRMED
+     *   -> CANCELLED
+     *
+     * CONFIRMED
+     *   -> COMPLETED
+     *   -> CANCELLED
+     *   -> NO_SHOW
+     *
+     * COMPLETED
+     *   -> nothing
+     *
+     * CANCELLED
+     *   -> nothing
+     *
+     * NO_SHOW
+     *   -> nothing
+     */
+    const allowedTransitions: Record<
+      AppointmentStatus,
+      AppointmentStatus[]
+    > = {
+      [AppointmentStatus.PENDING]: [
+        AppointmentStatus.CONFIRMED,
+        AppointmentStatus.CANCELLED,
+      ],
+
+      [AppointmentStatus.CONFIRMED]: [
+        AppointmentStatus.COMPLETED,
+        AppointmentStatus.CANCELLED,
+        AppointmentStatus.NO_SHOW,
+      ],
+
+      [AppointmentStatus.COMPLETED]: [],
+
+      [AppointmentStatus.CANCELLED]: [],
+
+      [AppointmentStatus.NO_SHOW]: [],
+    };
+
+    const allowedStatuses =
+      allowedTransitions[appointment.status];
+
     if (
-      appointment.status ===
-      AppointmentStatus.CANCELLED
+      !allowedStatuses.includes(dto.status)
     ) {
       throw new ConflictException(
-        'Cancelled appointment cannot be updated',
+        `Cannot change appointment status from ${appointment.status} to ${dto.status}`,
       );
     }
 
+    /*
+     * If an appointment is being confirmed,
+     * check again for an overlapping active appointment.
+     *
+     * This is important because another appointment
+     * might have been created after this appointment
+     * was initially created as PENDING.
+     */
     if (
-      appointment.status ===
-      AppointmentStatus.COMPLETED &&
-      dto.status !== AppointmentStatus.COMPLETED
+      dto.status ===
+      AppointmentStatus.CONFIRMED
     ) {
-      throw new ConflictException(
-        'Completed appointment cannot be reopened',
-      );
+      const overlappingAppointment =
+        await this.prisma.appointment.findFirst({
+          where: {
+            id: {
+              not: appointment.id,
+            },
+
+            barberId: appointment.barberId,
+
+            status: {
+              in: [
+                AppointmentStatus.PENDING,
+                AppointmentStatus.CONFIRMED,
+              ],
+            },
+
+            startAt: {
+              lt: appointment.endAt,
+            },
+
+            endAt: {
+              gt: appointment.startAt,
+            },
+          },
+        });
+
+      if (overlappingAppointment) {
+        throw new ConflictException(
+          'Cannot confirm appointment because the barber is already booked during this time',
+        );
+      }
     }
 
     return this.prisma.appointment.update({
@@ -363,6 +494,7 @@ export class AppointmentsService {
         },
 
         service: true,
+        salon: true,
       },
     });
   }
@@ -386,7 +518,25 @@ export class AppointmentsService {
       AppointmentStatus.COMPLETED
     ) {
       throw new ConflictException(
-        'Completed appointment cannot be deleted',
+        'Completed appointment cannot be cancelled',
+      );
+    }
+
+    if (
+      appointment.status ===
+      AppointmentStatus.CANCELLED
+    ) {
+      throw new ConflictException(
+        'Appointment is already cancelled',
+      );
+    }
+
+    if (
+      appointment.status ===
+      AppointmentStatus.NO_SHOW
+    ) {
+      throw new ConflictException(
+        'No-show appointment cannot be cancelled',
       );
     }
 

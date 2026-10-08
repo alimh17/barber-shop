@@ -1,5 +1,6 @@
 import {
   Body,
+  ConflictException,
   Controller,
   Delete,
   Get,
@@ -9,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import { UserRole } from '../generated/prisma/client.js';
+import { AppointmentStatus, UserRole } from '../generated/prisma/client.js';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
@@ -22,12 +23,14 @@ import { AppointmentsService } from './appointments.service.js';
 import { CreateAppointmentDto } from './dto/create-appointment.dto.js';
 import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto.js';
 
+
+
 @Controller('appointments')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AppointmentsController {
   constructor(
     private readonly appointmentsService: AppointmentsService,
-  ) {}
+  ) { }
 
   @Post()
   @Roles(
@@ -74,6 +77,36 @@ export class AppointmentsController {
     @Param('id') id: string,
     @Body() dto: UpdateAppointmentStatusDto,
   ) {
+    const allowedTransitions: Record<
+      AppointmentStatus,
+      AppointmentStatus[]
+    > = {
+      [AppointmentStatus.PENDING]: [
+        AppointmentStatus.CONFIRMED,
+        AppointmentStatus.CANCELLED,
+      ],
+
+      [AppointmentStatus.CONFIRMED]: [
+        AppointmentStatus.COMPLETED,
+        AppointmentStatus.CANCELLED,
+        AppointmentStatus.NO_SHOW,
+      ],
+
+      [AppointmentStatus.COMPLETED]: [],
+
+      [AppointmentStatus.CANCELLED]: [],
+
+      [AppointmentStatus.NO_SHOW]: [],
+    };
+    const allowed =
+      allowedTransitions[appointment.status];
+
+    if (!allowed.includes(dto.status)) {
+      throw new ConflictException(
+        `Cannot change appointment status from ${appointment.status} to ${dto.status}`,
+      );
+    }
+
     return this.appointmentsService.updateStatus(
       id,
       dto,

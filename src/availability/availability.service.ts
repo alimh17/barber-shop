@@ -573,4 +573,253 @@ export class AvailabilityService {
       );
     }
   }
+
+  private formatLocalDate(
+  date: Date,
+  timezone: string,
+): string {
+  const parts =
+    new Intl.DateTimeFormat(
+      'en-CA',
+      {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      },
+    ).formatToParts(date);
+
+  const values: Record<
+    string,
+    string
+  > = {};
+
+  for (const part of parts) {
+    values[part.type] = part.value;
+  }
+
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+private formatLocalTime(
+  date: Date,
+  timezone: string,
+): string {
+  const parts =
+    new Intl.DateTimeFormat(
+      'en-GB',
+      {
+        timeZone: timezone,
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+      },
+    ).formatToParts(date);
+
+  const values: Record<
+    string,
+    string
+  > = {};
+
+  for (const part of parts) {
+    values[part.type] = part.value;
+  }
+
+  return `${values.hour}:${values.minute}`;
+}
+
+  async validateBookingSlot(params: {
+  salonId: string;
+  barberId: string;
+  serviceId: string;
+  startAt: Date;
+}) {
+  const {
+    salonId,
+    barberId,
+    serviceId,
+    startAt,
+  } = params;
+
+  const salon = await this.prisma.salon.findUnique({
+    where: {
+      id: salonId,
+    },
+  });
+
+  if (!salon) {
+    throw new NotFoundException('Salon not found');
+  }
+
+  if (!salon.isActive) {
+    throw new ConflictException(
+      'Salon is inactive',
+    );
+  }
+
+  const barber = await this.prisma.barber.findUnique({
+    where: {
+      id: barberId,
+    },
+  });
+
+  if (!barber) {
+    throw new NotFoundException(
+      'Barber not found',
+    );
+  }
+
+  if (!barber.isActive) {
+    throw new ConflictException(
+      'Barber is inactive',
+    );
+  }
+
+  if (barber.salonId !== salonId) {
+    throw new BadRequestException(
+      'Barber does not belong to this salon',
+    );
+  }
+
+  const service = await this.prisma.service.findUnique({
+    where: {
+      id: serviceId,
+    },
+  });
+
+  if (!service) {
+    throw new NotFoundException(
+      'Service not found',
+    );
+  }
+
+  if (!service.isActive) {
+    throw new ConflictException(
+      'Service is inactive',
+    );
+  }
+
+  if (service.salonId !== salonId) {
+    throw new BadRequestException(
+      'Service does not belong to this salon',
+    );
+  }
+
+  const barberService =
+    await this.prisma.barberService.findUnique({
+      where: {
+        barberId_serviceId: {
+          barberId,
+          serviceId,
+        },
+      },
+    });
+
+  if (!barberService) {
+    throw new ConflictException(
+      'Barber does not provide this service',
+    );
+  }
+
+  if (service.duration <= 0) {
+    throw new ConflictException(
+      'Service duration must be greater than zero',
+    );
+  }
+
+  this.validateTimezone(salon.timezone);
+
+  const localDate =
+    this.formatLocalDate(
+      startAt,
+      salon.timezone,
+    );
+
+  const localTime =
+    this.formatLocalTime(
+      startAt,
+      salon.timezone,
+    );
+
+  const dayOfWeek = this.getDayOfWeek(
+    localDate,
+    salon.timezone,
+  );
+
+  const workingHour =
+    await this.prisma.workingHour.findUnique({
+      where: {
+        barberId_dayOfWeek: {
+          barberId,
+          dayOfWeek,
+        },
+      },
+    });
+
+  if (
+    !workingHour ||
+    !workingHour.isActive
+  ) {
+    throw new ConflictException(
+      'Barber is not working on this day',
+    );
+  }
+
+  const dayOff = await this.findDayOff(
+    barberId,
+    localDate,
+    salon.timezone,
+  );
+
+  if (dayOff) {
+    throw new ConflictException(
+      'Barber is off on this date',
+    );
+  }
+
+  const requestedStart =
+    startAt.getTime();
+
+  const requestedEnd =
+    requestedStart +
+    service.duration * 60 * 1000;
+
+  const workingStart =
+    this.localDateTimeToUtc(
+      localDate,
+      workingHour.startTime,
+      salon.timezone,
+    );
+
+  const workingEnd =
+    this.localDateTimeToUtc(
+      localDate,
+      workingHour.endTime,
+      salon.timezone,
+    );
+
+  if (
+    requestedStart <
+      workingStart.getTime() ||
+    requestedEnd >
+      workingEnd.getTime()
+  ) {
+    throw new ConflictException(
+      'Appointment is outside barber working hours',
+    );
+  }
+
+  return {
+    salon,
+    barber,
+    service,
+    dayOfWeek,
+    localDate,
+    localTime,
+    workingHour,
+    startAt,
+    endAt: new Date(requestedEnd),
+  };
+}
+
 }
