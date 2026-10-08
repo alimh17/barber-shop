@@ -19,10 +19,6 @@ type ExistingAppointment = {
   endAt: Date;
 };
 
-type TimeParts = {
-  hour: number;
-  minute: number;
-};
 
 @Injectable()
 export class AvailabilityService {
