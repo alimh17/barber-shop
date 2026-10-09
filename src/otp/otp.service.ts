@@ -4,6 +4,7 @@ import * as bcrypt from 'bcrypt';
 
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SmsService } from './sms.service.js';
+import { normalizeIranianPhone } from '../auth/phone.util.js';
 
 @Injectable()
 export class OtpService {
@@ -16,6 +17,7 @@ export class OtpService {
   ) {}
 
   async generate(phone: string) {
+    phone = normalizeIranianPhone(phone);
     const code = this.generateCode();
     const codeHash = await bcrypt.hash(code, 10);
     const expiresAt = new Date(Date.now() + this.otpExpiresInMs);
@@ -41,6 +43,7 @@ export class OtpService {
   }
 
   async verify(phone: string, code: string): Promise<void> {
+    phone = normalizeIranianPhone(phone);
     const now = new Date();
     const otp = await this.prisma.otpCode.findFirst({
       where: { phone, usedAt: null, expiresAt: { gt: now } },

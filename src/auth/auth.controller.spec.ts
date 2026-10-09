@@ -8,8 +8,10 @@ import request from 'supertest';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
+import { OtpRateLimitGuard } from './guards/otp-rate-limit.guard.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
 import { UsersService } from '../users/users.service.js';
+import { PrismaService } from '../prisma/prisma.service.js';
 import {
     UserRole,
     UserStatus,
@@ -45,6 +47,8 @@ describe('AuthController (HTTP)', () => {
             controllers: [AuthController],
             providers: [
                 JwtAuthGuard,
+                { provide: PrismaService, useValue: {} },
+                { provide: OtpRateLimitGuard, useValue: { canActivate: () => true } },
                 JwtStrategy,
                 {
                     provide: AuthService,

@@ -1,6 +1,5 @@
 import 'dotenv/config';
 
-import { randomUUID } from 'node:crypto';
 import { afterAll, afterEach, describe, expect, it } from 'vitest';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client.js';
@@ -37,7 +36,7 @@ describe('OTP generation PostgreSQL concurrency integration', () => {
   });
 
   it('leaves only one active OTP when two generation requests race for the same phone', async () => {
-    const phone = `integration-${randomUUID()}`;
+    const phone = '09' + Date.now().toString().slice(-9);
     testPhones.push(phone);
 
     await Promise.all([service.generate(phone), service.generate(phone)]);

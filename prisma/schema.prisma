@@ -251,3 +251,11 @@ model Appointment {
   @@index([customerId, startAt])
   @@index([status])
 }
+
+model OtpRateLimitEntry {
+  key     String   @id
+  count   Int
+  resetAt DateTime
+
+  @@index([resetAt])
+}
