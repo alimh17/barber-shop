@@ -1,18 +1,40 @@
+
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 
+import {
+  UserRole,
+  UserStatus,
+} from '../generated/prisma/client.js';
+
 import { PrismaService } from '../prisma/prisma.service.js';
+import { SalonAccessService } from '../salons/salon-access.service.js';
+
 import { CreateBarberDto } from './dto/create-barber.dto.js';
 import { UpdateBarberDto } from './dto/update-barber.dto.js';
 
 @Injectable()
 export class BarbersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly salonAccessService: SalonAccessService,
+  ) {}
 
-  async create(dto: CreateBarberDto) {
+  async create(
+    dto: CreateBarberDto,
+    userId: string,
+    role: UserRole,
+  ) {
+    await this.salonAccessService.assertCanAccessSalon(
+      userId,
+      role,
+      dto.salonId,
+    );
+
     const salon = await this.prisma.salon.findUnique({
       where: {
         id: dto.salonId,
@@ -47,12 +69,12 @@ export class BarbersService {
           phone: dto.phone,
           firstName: dto.firstName,
           lastName: dto.lastName,
-          role: 'BARBER',
-          status: 'ACTIVE',
+          role: UserRole.BARBER,
+          status: UserStatus.ACTIVE,
         },
       });
 
-      const barber = await tx.barber.create({
+      return tx.barber.create({
         data: {
           userId: user.id,
           salonId: dto.salonId,
@@ -62,16 +84,30 @@ export class BarbersService {
           salon: true,
         },
       });
-
-      return barber;
     });
   }
 
-  async findAll(salonId?: string) {
+  async findAll(
+    userId: string,
+    role: UserRole,
+    salonId?: string,
+  ) {
+    if (role !== UserRole.SUPER_ADMIN && !salonId) {
+      throw new BadRequestException(
+        'salonId is required',
+      );
+    }
+
+    if (salonId) {
+      await this.salonAccessService.assertCanAccessSalon(
+        userId,
+        role,
+        salonId,
+      );
+    }
+
     return this.prisma.barber.findMany({
-      where: {
-        ...(salonId ? { salonId } : {}),
-      },
+      where: salonId ? { salonId } : {},
       include: {
         user: true,
         salon: true,
@@ -82,7 +118,11 @@ export class BarbersService {
     });
   }
 
-  async findById(id: string) {
+  async findById(
+    id: string,
+    userId: string,
+    role: UserRole,
+  ) {
     const barber = await this.prisma.barber.findUnique({
       where: {
         id,
@@ -97,11 +137,26 @@ export class BarbersService {
       throw new NotFoundException('Barber not found');
     }
 
+    await this.salonAccessService.assertCanAccessSalon(
+      userId,
+      role,
+      barber.salonId,
+    );
+
     return barber;
   }
 
-  async update(id: string, dto: UpdateBarberDto) {
-    const barber = await this.findById(id);
+  async update(
+    id: string,
+    dto: UpdateBarberDto,
+    userId: string,
+    role: UserRole,
+  ) {
+    const barber = await this.findById(
+      id,
+      userId,
+      role,
+    );
 
     if (dto.phone && dto.phone !== barber.user.phone) {
       const existingUser = await this.prisma.user.findUnique({
@@ -125,22 +180,18 @@ export class BarbersService {
     } = dto;
 
     return this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.update({
+      await tx.user.update({
         where: {
           id: barber.userId,
         },
         data: {
           ...(phone !== undefined ? { phone } : {}),
-          ...(firstName !== undefined
-            ? { firstName }
-            : {}),
-          ...(lastName !== undefined
-            ? { lastName }
-            : {}),
+          ...(firstName !== undefined ? { firstName } : {}),
+          ...(lastName !== undefined ? { lastName } : {}),
         },
       });
 
-      const updatedBarber = await tx.barber.update({
+      return tx.barber.update({
         where: {
           id,
         },
@@ -152,13 +203,15 @@ export class BarbersService {
           salon: true,
         },
       });
-
-      return updatedBarber;
     });
   }
 
-  async remove(id: string) {
-    await this.findById(id);
+  async remove(
+    id: string,
+    userId: string,
+    role: UserRole,
+  ) {
+    await this.findById(id, userId, role);
 
     return this.prisma.barber.update({
       where: {
