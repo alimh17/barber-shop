@@ -436,7 +436,14 @@ export class AppointmentsService {
       throw new BadRequestException('Invalid startAt');
     }
 
-    if (startAt <= new Date()) {
+    const isScheduleChanged =
+      dto.startAt !== undefined ||
+      dto.barberId !== undefined ||
+      dto.serviceId !== undefined;
+
+    // Allow note-only edits on older appointments, but never reschedule one
+    // into the past or alter its scheduling details after its start time.
+    if (isScheduleChanged && startAt <= new Date()) {
       throw new BadRequestException('Appointment cannot be scheduled in the past');
     }
 
@@ -632,6 +639,7 @@ export class AppointmentsService {
       const result = await this.prisma.appointment.updateMany({
         where: {
           id,
+          updatedAt: appointment.updatedAt,
           status: appointment.status,
         },
         data: {

@@ -23,6 +23,7 @@ describe('AppointmentsService appointment status concurrency', () => {
     barberId: 'barber-1',
     startAt: new Date('2099-01-01T10:00:00.000Z'),
     endAt: new Date('2099-01-01T10:30:00.000Z'),
+    updatedAt: new Date('2098-12-01T00:00:00.000Z'),
     status: AppointmentStatus.PENDING,
   };
 
@@ -59,6 +60,7 @@ describe('AppointmentsService appointment status concurrency', () => {
     expect(prisma.appointment.updateMany).toHaveBeenCalledWith({
       where: {
         id: 'appointment-1',
+        updatedAt: appointment.updatedAt,
         status: AppointmentStatus.PENDING,
       },
       data: { status: AppointmentStatus.CONFIRMED },

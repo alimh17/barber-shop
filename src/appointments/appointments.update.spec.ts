@@ -134,6 +134,26 @@ describe('AppointmentsService.update', () => {
     expect(prisma.appointment.updateMany).not.toHaveBeenCalled();
   });
 
+  it('allows a note-only edit when the appointment start time is in the past', async () => {
+    const pastAppointment = {
+      ...appointment,
+      startAt: new Date('2000-01-01T10:00:00.000Z'),
+      endAt: new Date('2000-01-01T10:30:00.000Z'),
+    };
+    prisma.appointment.findUnique
+      .mockReset()
+      .mockResolvedValueOnce(pastAppointment)
+      .mockResolvedValue({ ...pastAppointment, note: 'updated note' });
+
+    await expect(service.update(
+      'appointment-1', { note: 'updated note' }, 'admin-1', UserRole.ADMIN,
+    )).resolves.toMatchObject({ note: 'updated note' });
+
+    expect(prisma.appointment.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ note: 'updated note' }),
+    }));
+  });
+
   it('rejects a stale edit if another request updates the appointment first', async () => {
     prisma.appointment.updateMany.mockResolvedValueOnce({ count: 0 });
 
