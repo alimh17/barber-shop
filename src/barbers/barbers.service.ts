@@ -22,7 +22,7 @@ export class BarbersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly salonAccessService: SalonAccessService,
-  ) {}
+  ) { }
 
   async create(
     dto: CreateBarberDto,
@@ -80,7 +80,16 @@ export class BarbersService {
           salonId: dto.salonId,
         },
         include: {
-          user: true,
+          user: {
+            select: {
+              id: true,
+              phone: true,
+              firstName: true,
+              lastName: true,
+              role: true,
+              status: true,
+            },
+          },
           salon: true,
         },
       });
@@ -109,7 +118,16 @@ export class BarbersService {
     return this.prisma.barber.findMany({
       where: salonId ? { salonId } : {},
       include: {
-        user: true,
+        user: {
+          select: {
+            id: true,
+            phone: true,
+            firstName: true,
+            lastName: true,
+            role: true,
+            status: true,
+          },
+        },
         salon: true,
       },
       orderBy: {
@@ -128,7 +146,16 @@ export class BarbersService {
         id,
       },
       include: {
-        user: true,
+        user: {
+          select: {
+            id: true,
+            phone: true,
+            firstName: true,
+            lastName: true,
+            role: true,
+            status: true,
+          },
+        },
         salon: true,
       },
     });
@@ -199,7 +226,16 @@ export class BarbersService {
           ...(isActive !== undefined ? { isActive } : {}),
         },
         include: {
-          user: true,
+          user: {
+            select: {
+              id: true,
+              phone: true,
+              firstName: true,
+              lastName: true,
+              role: true,
+              status: true,
+            },
+          },
           salon: true,
         },
       });
