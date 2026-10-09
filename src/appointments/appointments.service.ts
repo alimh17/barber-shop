@@ -7,7 +7,6 @@ import {
 
 import {
   AppointmentStatus,
-  Prisma,
 } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AvailabilityService } from '../availability/availability.service.js';
@@ -20,6 +19,51 @@ export class AppointmentsService {
     private readonly prisma: PrismaService,
     private readonly availabilityService: AvailabilityService,
   ) { }
+
+  private isAppointmentOverlapConstraintError(
+    error: unknown,
+  ): boolean {
+    if (
+      typeof error !== 'object' ||
+      error === null
+    ) {
+      return false;
+    }
+
+    const candidate = error as {
+      code?: unknown;
+      message?: unknown;
+      meta?: unknown;
+    };
+
+    const details = [
+      candidate.message,
+      candidate.meta,
+    ]
+      .map((value) => {
+        if (typeof value === 'string') {
+          return value;
+        }
+
+        try {
+          return JSON.stringify(value ?? '');
+        } catch {
+          return '';
+        }
+      })
+      .join(' ');
+
+    // PostgreSQL exclusion_violation
+    if (candidate.code === '23P01') {
+      return true;
+    }
+
+    // Prisma may wrap the database error.
+    // Match the specific constraint, not every P2004.
+    return details.includes(
+      'appointment_no_overlap',
+    );
+  }
 
   async create(
     userId: string,
@@ -236,8 +280,9 @@ export class AppointmentsService {
       });
     } catch (error) {
       if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2004'
+        this.isAppointmentOverlapConstraintError(
+          error,
+        )
       ) {
         throw new ConflictException(
           'Barber is already booked during this time',
@@ -455,48 +500,62 @@ export class AppointmentsService {
       }
     }
 
-    return this.prisma.appointment.update({
-      where: {
-        id,
-      },
+    try {
+      return await this.prisma.appointment.update({
+        where: {
+          id,
+        },
 
-      data: {
-        status: dto.status,
-      },
+        data: {
+          status: dto.status,
+        },
 
-      include: {
-        customer: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                phone: true,
-                firstName: true,
-                lastName: true,
-                role: true,
+        include: {
+          customer: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  phone: true,
+                  firstName: true,
+                  lastName: true,
+                  role: true,
+                },
               },
             },
           },
-        },
 
-        barber: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                phone: true,
-                firstName: true,
-                lastName: true,
-                role: true,
+          barber: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  phone: true,
+                  firstName: true,
+                  lastName: true,
+                  role: true,
+                },
               },
             },
           },
-        },
 
-        service: true,
-        salon: true,
-      },
-    });
+          service: true,
+          salon: true,
+        },
+      });
+    } catch (error) {
+      if (
+        this.isAppointmentOverlapConstraintError(
+          error,
+        )
+      ) {
+        throw new ConflictException(
+          'Cannot confirm appointment because the barber is already booked during this time',
+        );
+      }
+
+      throw error;
+    }
   }
 
   async remove(id: string) {

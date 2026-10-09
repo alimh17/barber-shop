@@ -243,15 +243,3 @@ ALTER TABLE "Appointment" ADD CONSTRAINT "Appointment_barberId_fkey" FOREIGN KEY
 
 -- AddForeignKey
 ALTER TABLE "Appointment" ADD CONSTRAINT "Appointment_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "Service"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
-CREATE EXTENSION IF NOT EXISTS btree_gist;
-
-ALTER TABLE "Appointment"
-ADD CONSTRAINT "appointment_no_overlap"
-EXCLUDE USING gist (
-  "barberId" WITH =,
-  tstzrange("startAt", "endAt", '[)') WITH &&
-)
-WHERE (
-  "status" IN ('PENDING', 'CONFIRMED')
-);
