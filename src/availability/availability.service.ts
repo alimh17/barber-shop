@@ -32,6 +32,8 @@ export class AvailabilityService {
       date,
     } = dto;
 
+    this.validateDateString(date);
+
     const slotIntervalMinutes =
       dto.slotIntervalMinutes ?? 15;
 

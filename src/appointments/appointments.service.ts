@@ -766,9 +766,13 @@ export class AppointmentsService {
       throw new ConflictException('No-show appointment cannot be cancelled');
     }
 
+    // Use the same optimistic concurrency check as other appointment writes.
+    // The status alone is insufficient: another request may have rescheduled
+    // or edited this appointment without changing its status.
     const result = await this.prisma.appointment.updateMany({
       where: {
         id,
+        updatedAt: appointment.updatedAt,
         status: appointment.status,
       },
       data: {

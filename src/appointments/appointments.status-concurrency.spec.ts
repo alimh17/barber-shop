@@ -104,6 +104,7 @@ describe('AppointmentsService appointment status concurrency', () => {
     expect(prisma.appointment.updateMany).toHaveBeenCalledWith({
       where: {
         id: 'appointment-1',
+        updatedAt: appointment.updatedAt,
         status: AppointmentStatus.CONFIRMED,
       },
       data: { status: AppointmentStatus.CANCELLED },
