@@ -438,11 +438,13 @@ export class AppointmentsService {
 
     // Detect actual scheduling changes, not merely fields present in the DTO.
     // Clients may submit the full form even when only the note was edited.
+    // Compare the effective values after applying the same nullish fallbacks
+    // used by the update below. Optional null IDs therefore behave like omitted
+    // fields instead of being misclassified as scheduling changes.
     const isScheduleChanged =
-      (dto.startAt !== undefined &&
-        startAt.getTime() !== appointment.startAt.getTime()) ||
-      (dto.barberId !== undefined && dto.barberId !== appointment.barberId) ||
-      (dto.serviceId !== undefined && dto.serviceId !== appointment.serviceId);
+      startAt.getTime() !== appointment.startAt.getTime() ||
+      barberId !== appointment.barberId ||
+      serviceId !== appointment.serviceId;
 
     // Allow edits that do not actually change scheduling details on older
     // appointments, but never reschedule one into the past or alter its

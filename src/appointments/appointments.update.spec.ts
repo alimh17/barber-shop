@@ -188,6 +188,33 @@ describe('AppointmentsService.update', () => {
     expect(prisma.service.findUnique).not.toHaveBeenCalled();
   });
 
+  it('treats null scheduling IDs as omitted for a note edit on a past appointment', async () => {
+    const pastAppointment = {
+      ...appointment,
+      startAt: new Date('2000-01-01T10:00:00.000Z'),
+      endAt: new Date('2000-01-01T10:30:00.000Z'),
+    };
+    prisma.appointment.findUnique
+      .mockReset()
+      .mockResolvedValueOnce(pastAppointment)
+      .mockResolvedValue({ ...pastAppointment, note: 'updated note' });
+
+    await expect(service.update(
+      'appointment-1', {
+        note: 'updated note',
+        barberId: null,
+        serviceId: null,
+      } as any, 'admin-1', UserRole.ADMIN,
+    )).resolves.toMatchObject({ note: 'updated note' });
+
+    expect(prisma.appointment.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: { note: 'updated note' },
+    }));
+    expect(availabilityService.validateBookingSlot).not.toHaveBeenCalled();
+    expect(prisma.barber.findUnique).not.toHaveBeenCalled();
+    expect(prisma.service.findUnique).not.toHaveBeenCalled();
+  });
+
   it('rejects an actual scheduling change on a past appointment', async () => {
     const pastAppointment = {
       ...appointment,
