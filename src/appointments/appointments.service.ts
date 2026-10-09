@@ -5,76 +5,109 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import {
-  AppointmentStatus,
-  UserRole
-} from '../generated/prisma/client.js';
-import { SalonAccessService } from '../salons/salon-access.service.js';
-import { PrismaService } from '../prisma/prisma.service.js';
+import { AppointmentStatus, UserRole } from '../generated/prisma/client.js';
 import { AvailabilityService } from '../availability/availability.service.js';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { SalonAccessService } from '../salons/salon-access.service.js';
+import { CreateAdminAppointmentDto } from './dto/create-admin-appointment.dto.js';
 import { CreateAppointmentDto } from './dto/create-appointment.dto.js';
 import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto.js';
 
 @Injectable()
 export class AppointmentsService {
   constructor(
-  private readonly prisma: PrismaService,
-  private readonly availabilityService: AvailabilityService,
-  private readonly salonAccessService: SalonAccessService,
-) {}
+    private readonly prisma: PrismaService,
+    private readonly availabilityService: AvailabilityService,
+    private readonly salonAccessService: SalonAccessService,
+  ) {}
 
- 
-private isAppointmentOverlapConstraintError(
-  error: unknown,
-): boolean {
-  if (typeof error !== 'object' || error === null) {
-    return false;
-  }
+  /**
+   * تشخیص خطای تداخل رزرو PostgreSQL.
+   */
+  private isAppointmentOverlapConstraintError(error: unknown): boolean {
+    if (typeof error !== 'object' || error === null) {
+      return false;
+    }
 
-  const candidate = error as {
-    message?: unknown;
-    meta?: {
-      driverAdapterError?: {
-        cause?: {
-          code?: unknown;
-          originalCode?: unknown;
-          message?: unknown;
-          originalMessage?: unknown;
+    const candidate = error as {
+      message?: unknown;
+      meta?: {
+        driverAdapterError?: {
+          cause?: {
+            code?: unknown;
+            originalCode?: unknown;
+            message?: unknown;
+            originalMessage?: unknown;
+          };
         };
       };
     };
-  };
 
-  const cause =
-    candidate.meta?.driverAdapterError?.cause;
+    const cause = candidate.meta?.driverAdapterError?.cause;
 
-  const messages = [
-    candidate.message,
-    cause?.message,
-    cause?.originalMessage,
-  ]
-    .filter(
-      (value): value is string =>
-        typeof value === 'string',
-    )
-    .join(' ');
+    const messages = [candidate.message, cause?.message, cause?.originalMessage]
+      .filter((value): value is string => typeof value === 'string')
+      .join(' ');
 
-  // Map only the specific PostgreSQL exclusion constraint.
-  return /constraint\s+["']appointment_no_overlap["']/i.test(
-    messages,
-  );
-}
+    return /constraint\s+["']appointment_no_overlap["']/i.test(messages);
+  }
 
-  async create(
+  /**
+   * رزرو توسط مشتری واردشده.
+   * مشتری از توکن کاربر تعیین می‌شود؛
+   * بنابراین مشتری نمی‌تواند برای شخص دیگری رزرو کند.
+   */
+  async create(userId: string, dto: CreateAppointmentDto) {
+    const customer = await this.prisma.customer.findUnique({
+      where: { userId },
+    });
+
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
+
+    return this.createForCustomer(customer.id, dto);
+  }
+
+  /**
+   * رزرو از پنل ADMIN یا SUPER_ADMIN.
+   * customerId در این مسیر شناسه رکورد Customer است.
+   */
+  async createForAdmin(
     userId: string,
+    role: UserRole,
+    dto: CreateAdminAppointmentDto,
+  ) {
+    const customer = await this.prisma.customer.findUnique({
+      where: { id: dto.customerId },
+    });
+
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
+
+    return this.createForCustomer(customer.id, dto, {
+      userId,
+      role,
+    });
+  }
+
+  /**
+   * منطق مشترک ایجاد رزرو.
+   * کنترل زمان، ساعت کاری، خدمت و تداخل در یک نقطه انجام می‌شود.
+   */
+  private async createForCustomer(
+    customerId: string,
     dto: CreateAppointmentDto,
+    accessContext?: {
+      userId: string;
+      role: UserRole;
+    },
   ) {
     const startAt = new Date(dto.startAt);
 
     if (Number.isNaN(startAt.getTime())) {
-      throw new BadRequestException(
-        'Invalid startAt',
-      );
+      throw new BadRequestException('Invalid startAt');
     }
 
     if (startAt <= new Date()) {
@@ -83,55 +116,29 @@ private isAppointmentOverlapConstraintError(
       );
     }
 
-    const [customer, barber, service] =
-      await Promise.all([
-        this.prisma.customer.findUnique({
-          where: {
-            userId,
-          },
-        }),
-
-        this.prisma.barber.findUnique({
-          where: {
-            id: dto.barberId,
-          },
-        }),
-
-        this.prisma.service.findUnique({
-          where: {
-            id: dto.serviceId,
-          },
-        }),
-      ]);
-
-    if (!customer) {
-      throw new NotFoundException(
-        'Customer not found',
-      );
-    }
+    const [barber, service] = await Promise.all([
+      this.prisma.barber.findUnique({
+        where: { id: dto.barberId },
+      }),
+      this.prisma.service.findUnique({
+        where: { id: dto.serviceId },
+      }),
+    ]);
 
     if (!barber) {
-      throw new NotFoundException(
-        'Barber not found',
-      );
+      throw new NotFoundException('Barber not found');
     }
 
     if (!barber.isActive) {
-      throw new ConflictException(
-        'Cannot book an inactive barber',
-      );
+      throw new ConflictException('Cannot book an inactive barber');
     }
 
     if (!service) {
-      throw new NotFoundException(
-        'Service not found',
-      );
+      throw new NotFoundException('Service not found');
     }
 
     if (!service.isActive) {
-      throw new ConflictException(
-        'Cannot book an inactive service',
-      );
+      throw new ConflictException('Cannot book an inactive service');
     }
 
     if (barber.salonId !== service.salonId) {
@@ -140,15 +147,23 @@ private isAppointmentOverlapConstraintError(
       );
     }
 
-    const barberService =
-      await this.prisma.barberService.findUnique({
-        where: {
-          barberId_serviceId: {
-            barberId: dto.barberId,
-            serviceId: dto.serviceId,
-          },
+    // برای رزرو مدیریتی، دسترسی به سالن باید تأیید شود.
+    if (accessContext) {
+      await this.salonAccessService.assertCanAccessSalon(
+        accessContext.userId,
+        accessContext.role,
+        barber.salonId,
+      );
+    }
+
+    const barberService = await this.prisma.barberService.findUnique({
+      where: {
+        barberId_serviceId: {
+          barberId: barber.id,
+          serviceId: service.id,
         },
-      });
+      },
+    });
 
     if (!barberService) {
       throw new ConflictException(
@@ -157,95 +172,53 @@ private isAppointmentOverlapConstraintError(
     }
 
     if (service.duration <= 0) {
-      throw new ConflictException(
-        'Service duration must be greater than zero',
-      );
+      throw new ConflictException('Service duration must be greater than zero');
     }
 
-    /*
-     * Validate:
-     *
-     * - salon
-     * - barber
-     * - service
-     * - barber service
-     * - working hours
-     * - day off
-     * - appointment duration inside working hours
-     *
-     * The returned endAt is calculated from the
-     * actual service duration.
-     */
-    const slotValidation =
-      await this.availabilityService.validateBookingSlot({
-        salonId: barber.salonId,
-        barberId: barber.id,
-        serviceId: service.id,
-        startAt,
-      });
+    // بررسی ساعت کاری، روز تعطیل و مدت واقعی خدمت.
+    const slotValidation = await this.availabilityService.validateBookingSlot({
+      salonId: barber.salonId,
+      barberId: barber.id,
+      serviceId: service.id,
+      startAt,
+    });
 
     const endAt = slotValidation.endAt;
 
-    /*
-     * Check for an existing appointment.
-     *
-     * Overlap rule:
-     *
-     * newStart < existingEnd
-     * &&
-     * newEnd > existingStart
-     *
-     * CANCELLED / COMPLETED / NO_SHOW appointments
-     * don't block a new booking.
-     */
-    const overlappingAppointment =
-      await this.prisma.appointment.findFirst({
-        where: {
-          barberId: barber.id,
-
-          status: {
-            in: [
-              AppointmentStatus.PENDING,
-              AppointmentStatus.CONFIRMED,
-            ],
-          },
-
-          startAt: {
-            lt: endAt,
-          },
-
-          endAt: {
-            gt: startAt,
-          },
+    // جلوگیری از تداخل با رزروهای فعال.
+    const overlappingAppointment = await this.prisma.appointment.findFirst({
+      where: {
+        barberId: barber.id,
+        status: {
+          in: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED],
         },
-      });
+        startAt: {
+          lt: endAt,
+        },
+        endAt: {
+          gt: startAt,
+        },
+      },
+    });
 
     if (overlappingAppointment) {
-      throw new ConflictException(
-        'Barber is already booked during this time',
-      );
+      throw new ConflictException('Barber is already booked during this time');
     }
+
     try {
       return await this.prisma.appointment.create({
         data: {
           salonId: barber.salonId,
-
-          customerId: customer.id,
-
-          barberId: dto.barberId,
-          serviceId: dto.serviceId,
-
+          customerId,
+          barberId: barber.id,
+          serviceId: service.id,
           startAt,
           endAt,
-
           price: service.price,
           duration: service.duration,
-
           status: AppointmentStatus.PENDING,
-
           note: dto.note,
         },
-
         include: {
           customer: {
             include: {
@@ -260,7 +233,6 @@ private isAppointmentOverlapConstraintError(
               },
             },
           },
-
           barber: {
             include: {
               user: {
@@ -274,16 +246,11 @@ private isAppointmentOverlapConstraintError(
               },
             },
           },
-
           service: true,
         },
       });
     } catch (error) {
-      if (
-        this.isAppointmentOverlapConstraintError(
-          error,
-        )
-      ) {
+      if (this.isAppointmentOverlapConstraintError(error)) {
         throw new ConflictException(
           'Barber is already booked during this time',
         );
@@ -293,223 +260,185 @@ private isAppointmentOverlapConstraintError(
     }
   }
 
-  async findById(id: string) {
-    const appointment =
-      await this.prisma.appointment.findUnique({
-        where: {
-          id,
-        },
-
-        include: {
-          customer: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  phone: true,
-                  firstName: true,
-                  lastName: true,
-                  role: true,
-                },
+  /**
+   * دریافت یک نوبت همراه با کنترل دسترسی سالن.
+   */
+  async findById(id: string, userId: string, role: UserRole) {
+    const appointment = await this.prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        customer: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                phone: true,
+                firstName: true,
+                lastName: true,
+                role: true,
               },
             },
           },
-
-          barber: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  phone: true,
-                  firstName: true,
-                  lastName: true,
-                  role: true,
-                },
+        },
+        barber: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                phone: true,
+                firstName: true,
+                lastName: true,
+                role: true,
               },
             },
           },
-
-          service: true,
-          salon: true,
         },
-      });
+        service: true,
+        salon: true,
+      },
+    });
 
     if (!appointment) {
-      throw new NotFoundException(
-        'Appointment not found',
-      );
+      throw new NotFoundException('Appointment not found');
     }
+
+    await this.salonAccessService.assertCanAccessSalon(
+      userId,
+      role,
+      appointment.salonId,
+    );
 
     return appointment;
   }
 
- async findAll(userId: string, role: UserRole) {
-  let where = {};
+  /**
+   * دریافت فهرست نوبت‌ها:
+   * ADMIN فقط سالن‌های دارای عضویت فعال را می‌بیند.
+   * SUPER_ADMIN تمام سالن‌ها را می‌بیند.
+   */
+  async findAll(userId: string, role: UserRole) {
+    const where =
+      role === UserRole.SUPER_ADMIN
+        ? {}
+        : {
+            salonId: {
+              in: (
+                await this.prisma.salonMembership.findMany({
+                  where: {
+                    userId,
+                    isActive: true,
+                  },
+                  select: {
+                    salonId: true,
+                  },
+                })
+              ).map((membership) => membership.salonId),
+            },
+          };
 
-  if (role !== UserRole.SUPER_ADMIN) {
-    const memberships = await this.prisma.salonMembership.findMany({
-      where: {
-        userId,
-        isActive: true,
+    return this.prisma.appointment.findMany({
+      where,
+      orderBy: {
+        startAt: 'asc',
       },
-      select: {
-        salonId: true,
+      include: {
+        customer: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                phone: true,
+                firstName: true,
+                lastName: true,
+                role: true,
+              },
+            },
+          },
+        },
+        barber: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                phone: true,
+                firstName: true,
+                lastName: true,
+                role: true,
+              },
+            },
+          },
+        },
+        service: true,
+        salon: true,
       },
     });
-
-    where = {
-      salonId: {
-        in: memberships.map((membership) => membership.salonId),
-      },
-    };
   }
 
-  return this.prisma.appointment.findMany({
-    where,
-    orderBy: {
-      startAt: 'asc',
-    },
-    include: {
-      customer: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              phone: true,
-              firstName: true,
-              lastName: true,
-              role: true,
-            },
-          },
-        },
-      },
-      barber: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              phone: true,
-              firstName: true,
-              lastName: true,
-              role: true,
-            },
-          },
-        },
-      },
-      service: true,
-      salon: true,
-    },
-  });
-}
-
+  /**
+   * تغییر وضعیت نوبت با کنترل دسترسی سالن.
+   */
   async updateStatus(
     id: string,
     dto: UpdateAppointmentStatusDto,
+    userId: string,
+    role: UserRole,
   ) {
-    const appointment =
-      await this.prisma.appointment.findUnique({
-        where: {
-          id,
-        },
-      });
+    const appointment = await this.prisma.appointment.findUnique({
+      where: { id },
+    });
 
     if (!appointment) {
-      throw new NotFoundException(
-        'Appointment not found',
-      );
+      throw new NotFoundException('Appointment not found');
     }
 
-    /*
-     * Allowed state transitions:
-     *
-     * PENDING
-     *   -> CONFIRMED
-     *   -> CANCELLED
-     *
-     * CONFIRMED
-     *   -> COMPLETED
-     *   -> CANCELLED
-     *   -> NO_SHOW
-     *
-     * COMPLETED
-     *   -> nothing
-     *
-     * CANCELLED
-     *   -> nothing
-     *
-     * NO_SHOW
-     *   -> nothing
-     */
-    const allowedTransitions: Record<
-      AppointmentStatus,
-      AppointmentStatus[]
-    > = {
+    await this.salonAccessService.assertCanAccessSalon(
+      userId,
+      role,
+      appointment.salonId,
+    );
+
+    const allowedTransitions: Record<AppointmentStatus, AppointmentStatus[]> = {
       [AppointmentStatus.PENDING]: [
         AppointmentStatus.CONFIRMED,
         AppointmentStatus.CANCELLED,
       ],
-
       [AppointmentStatus.CONFIRMED]: [
         AppointmentStatus.COMPLETED,
         AppointmentStatus.CANCELLED,
         AppointmentStatus.NO_SHOW,
       ],
-
       [AppointmentStatus.COMPLETED]: [],
-
       [AppointmentStatus.CANCELLED]: [],
-
       [AppointmentStatus.NO_SHOW]: [],
     };
 
-    const allowedStatuses =
-      allowedTransitions[appointment.status];
+    const allowedStatuses = allowedTransitions[appointment.status];
 
-    if (
-      !allowedStatuses.includes(dto.status)
-    ) {
+    if (!allowedStatuses.includes(dto.status)) {
       throw new ConflictException(
         `Cannot change appointment status from ${appointment.status} to ${dto.status}`,
       );
     }
 
-    /*
-     * If an appointment is being confirmed,
-     * check again for an overlapping active appointment.
-     *
-     * This is important because another appointment
-     * might have been created after this appointment
-     * was initially created as PENDING.
-     */
-    if (
-      dto.status ===
-      AppointmentStatus.CONFIRMED
-    ) {
-      const overlappingAppointment =
-        await this.prisma.appointment.findFirst({
-          where: {
-            id: {
-              not: appointment.id,
-            },
-
-            barberId: appointment.barberId,
-
-            status: {
-              in: [
-                AppointmentStatus.PENDING,
-                AppointmentStatus.CONFIRMED,
-              ],
-            },
-
-            startAt: {
-              lt: appointment.endAt,
-            },
-
-            endAt: {
-              gt: appointment.startAt,
-            },
+    // پیش از تأیید نوبت، دوباره تداخل زمانی بررسی می‌شود.
+    if (dto.status === AppointmentStatus.CONFIRMED) {
+      const overlappingAppointment = await this.prisma.appointment.findFirst({
+        where: {
+          id: {
+            not: appointment.id,
           },
-        });
+          barberId: appointment.barberId,
+          status: {
+            in: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED],
+          },
+          startAt: {
+            lt: appointment.endAt,
+          },
+          endAt: {
+            gt: appointment.startAt,
+          },
+        },
+      });
 
       if (overlappingAppointment) {
         throw new ConflictException(
@@ -520,14 +449,10 @@ private isAppointmentOverlapConstraintError(
 
     try {
       return await this.prisma.appointment.update({
-        where: {
-          id,
-        },
-
+        where: { id },
         data: {
           status: dto.status,
         },
-
         include: {
           customer: {
             include: {
@@ -542,7 +467,6 @@ private isAppointmentOverlapConstraintError(
               },
             },
           },
-
           barber: {
             include: {
               user: {
@@ -556,17 +480,12 @@ private isAppointmentOverlapConstraintError(
               },
             },
           },
-
           service: true,
           salon: true,
         },
       });
     } catch (error) {
-      if (
-        this.isAppointmentOverlapConstraintError(
-          error,
-        )
-      ) {
+      if (this.isAppointmentOverlapConstraintError(error)) {
         throw new ConflictException(
           'Cannot confirm appointment because the barber is already booked during this time',
         );
@@ -576,52 +495,38 @@ private isAppointmentOverlapConstraintError(
     }
   }
 
-  async remove(id: string) {
-    const appointment =
-      await this.prisma.appointment.findUnique({
-        where: {
-          id,
-        },
-      });
+  /**
+   * لغو نوبت با کنترل دسترسی سالن.
+   */
+  async remove(id: string, userId: string, role: UserRole) {
+    const appointment = await this.prisma.appointment.findUnique({
+      where: { id },
+    });
 
     if (!appointment) {
-      throw new NotFoundException(
-        'Appointment not found',
-      );
+      throw new NotFoundException('Appointment not found');
     }
 
-    if (
-      appointment.status ===
-      AppointmentStatus.COMPLETED
-    ) {
-      throw new ConflictException(
-        'Completed appointment cannot be cancelled',
-      );
+    await this.salonAccessService.assertCanAccessSalon(
+      userId,
+      role,
+      appointment.salonId,
+    );
+
+    if (appointment.status === AppointmentStatus.COMPLETED) {
+      throw new ConflictException('Completed appointment cannot be cancelled');
     }
 
-    if (
-      appointment.status ===
-      AppointmentStatus.CANCELLED
-    ) {
-      throw new ConflictException(
-        'Appointment is already cancelled',
-      );
+    if (appointment.status === AppointmentStatus.CANCELLED) {
+      throw new ConflictException('Appointment is already cancelled');
     }
 
-    if (
-      appointment.status ===
-      AppointmentStatus.NO_SHOW
-    ) {
-      throw new ConflictException(
-        'No-show appointment cannot be cancelled',
-      );
+    if (appointment.status === AppointmentStatus.NO_SHOW) {
+      throw new ConflictException('No-show appointment cannot be cancelled');
     }
 
     await this.prisma.appointment.update({
-      where: {
-        id,
-      },
-
+      where: { id },
       data: {
         status: AppointmentStatus.CANCELLED,
       },

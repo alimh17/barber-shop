@@ -21,16 +21,15 @@ describe('AppointmentsService access control', () => {
     service = new AppointmentsService(
       prisma as never,
       {} as never,
+      {} as never,
     );
 
-    prisma.salonMembership.findMany.mockResolvedValue([
-      { salonId: 'salon-1' },
-    ]);
+    prisma.salonMembership.findMany.mockResolvedValue([{ salonId: 'salon-1' }]);
 
     prisma.appointment.findMany.mockResolvedValue([]);
   });
 
-  it('limits an ADMIN to appointments in their active salons', async () => {
+  it('limits ADMIN to appointments in active salons', async () => {
     await service.findAll('admin-1', UserRole.ADMIN);
 
     expect(prisma.salonMembership.findMany).toHaveBeenCalledWith({
@@ -60,13 +59,13 @@ describe('AppointmentsService access control', () => {
     expect(prisma.salonMembership.findMany).not.toHaveBeenCalled();
 
     expect(prisma.appointment.findMany).toHaveBeenCalledWith(
-      expect.not.objectContaining({
-        where: expect.anything(),
+      expect.objectContaining({
+        where: {},
       }),
     );
   });
 
-  it('returns no appointments when an ADMIN has no active memberships', async () => {
+  it('returns no appointments when ADMIN has no active memberships', async () => {
     prisma.salonMembership.findMany.mockResolvedValue([]);
 
     await service.findAll('admin-2', UserRole.ADMIN);

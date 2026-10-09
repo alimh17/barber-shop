@@ -1,531 +1,139 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  AppointmentStatus,
-  UserRole,
-} from '../generated/prisma/client.js';
+import { UserRole } from '../generated/prisma/client.js';
+import { AppointmentsService } from './appointments.service.js';
 
-import { PrismaService } from '../prisma/prisma.service.js';
-import { AvailabilityService } from '../availability/availability.service.js';
-import { SalonAccessService } from '../salons/salon-access.service.js';
+describe('AppointmentsService access control', () => {
+  const prisma = {
+    salonMembership: {
+      findMany: vi.fn(),
+    },
+    appointment: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+    },
+  };
 
-import { CreateAppointmentDto } from './dto/create-appointment.dto.js';
-import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto.js';
+  const availabilityService = {};
 
-@Injectable()
-export class AppointmentsService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly availabilityService: AvailabilityService,
-    private readonly salonAccessService: SalonAccessService,
-  ) {}
+  const salonAccessService = {
+    assertCanAccessSalon: vi.fn(),
+  };
 
-  private isAppointmentOverlapConstraintError(
-    error: unknown,
-  ): boolean {
-    if (typeof error !== 'object' || error === null) {
-      return false;
-    }
+  let service: AppointmentsService;
 
-    const candidate = error as {
-      message?: unknown;
-      meta?: {
-        driverAdapterError?: {
-          cause?: {
-            code?: unknown;
-            originalCode?: unknown;
-            message?: unknown;
-            originalMessage?: unknown;
-          };
-        };
-      };
-    };
+  beforeEach(() => {
+    vi.resetAllMocks();
 
-    const cause =
-      candidate.meta?.driverAdapterError?.cause;
-
-    const messages = [
-      candidate.message,
-      cause?.message,
-      cause?.originalMessage,
-    ]
-      .filter(
-        (value): value is string =>
-          typeof value === 'string',
-      )
-      .join(' ');
-
-    return /constraint\s+["']appointment_no_overlap["']/i.test(
-      messages,
+    service = new AppointmentsService(
+      prisma as never,
+      availabilityService as never,
+      salonAccessService as never,
     );
-  }
 
-  async create(
-    userId: string,
-    dto: CreateAppointmentDto,
-  ) {
-    const startAt = new Date(dto.startAt);
-
-    if (Number.isNaN(startAt.getTime())) {
-      throw new BadRequestException('Invalid startAt');
-    }
-
-    if (startAt <= new Date()) {
-      throw new BadRequestException(
-        'Appointment cannot be created in the past',
-      );
-    }
-
-    const [customer, barber, service] = await Promise.all([
-      this.prisma.customer.findUnique({
-        where: { userId },
-      }),
-      this.prisma.barber.findUnique({
-        where: { id: dto.barberId },
-      }),
-      this.prisma.service.findUnique({
-        where: { id: dto.serviceId },
-      }),
+    prisma.salonMembership.findMany.mockResolvedValue([
+      { salonId: 'salon-1' },
     ]);
 
-    if (!customer) {
-      throw new NotFoundException('Customer not found');
-    }
+    prisma.appointment.findMany.mockResolvedValue([]);
 
-    if (!barber) {
-      throw new NotFoundException('Barber not found');
-    }
+    salonAccessService.assertCanAccessSalon.mockResolvedValue(undefined);
 
-    if (!barber.isActive) {
-      throw new ConflictException(
-        'Cannot book an inactive barber',
-      );
-    }
-
-    if (!service) {
-      throw new NotFoundException('Service not found');
-    }
-
-    if (!service.isActive) {
-      throw new ConflictException(
-        'Cannot book an inactive service',
-      );
-    }
-
-    if (barber.salonId !== service.salonId) {
-      throw new BadRequestException(
-        'Barber and service must belong to the same salon',
-      );
-    }
-
-    const barberService =
-      await this.prisma.barberService.findUnique({
-        where: {
-          barberId_serviceId: {
-            barberId: dto.barberId,
-            serviceId: dto.serviceId,
-          },
-        },
-      });
-
-    if (!barberService) {
-      throw new ConflictException(
-        'This barber does not provide the selected service',
-      );
-    }
-
-    if (service.duration <= 0) {
-      throw new ConflictException(
-        'Service duration must be greater than zero',
-      );
-    }
-
-    const slotValidation =
-      await this.availabilityService.validateBookingSlot({
-        salonId: barber.salonId,
-        barberId: barber.id,
-        serviceId: service.id,
-        startAt,
-      });
-
-    const endAt = slotValidation.endAt;
-
-    const overlappingAppointment =
-      await this.prisma.appointment.findFirst({
-        where: {
-          barberId: barber.id,
-          status: {
-            in: [
-              AppointmentStatus.PENDING,
-              AppointmentStatus.CONFIRMED,
-            ],
-          },
-          startAt: {
-            lt: endAt,
-          },
-          endAt: {
-            gt: startAt,
-          },
-        },
-      });
-
-    if (overlappingAppointment) {
-      throw new ConflictException(
-        'Barber is already booked during this time',
-      );
-    }
-
-    try {
-      return await this.prisma.appointment.create({
-        data: {
-          salonId: barber.salonId,
-          customerId: customer.id,
-          barberId: dto.barberId,
-          serviceId: dto.serviceId,
-          startAt,
-          endAt,
-          price: service.price,
-          duration: service.duration,
-          status: AppointmentStatus.PENDING,
-          note: dto.note,
-        },
-        include: {
-          customer: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  phone: true,
-                  firstName: true,
-                  lastName: true,
-                  role: true,
-                },
-              },
-            },
-          },
-          barber: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  phone: true,
-                  firstName: true,
-                  lastName: true,
-                  role: true,
-                },
-              },
-            },
-          },
-          service: true,
-        },
-      });
-    } catch (error) {
-      if (this.isAppointmentOverlapConstraintError(error)) {
-        throw new ConflictException(
-          'Barber is already booked during this time',
-        );
-      }
-
-      throw error;
-    }
-  }
-
-  async findById(
-    id: string,
-    userId: string,
-    role: UserRole,
-  ) {
-    const appointment =
-      await this.prisma.appointment.findUnique({
-        where: { id },
-        include: {
-          customer: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  phone: true,
-                  firstName: true,
-                  lastName: true,
-                  role: true,
-                },
-              },
-            },
-          },
-          barber: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  phone: true,
-                  firstName: true,
-                  lastName: true,
-                  role: true,
-                },
-              },
-            },
-          },
-          service: true,
-          salon: true,
-        },
-      });
-
-    if (!appointment) {
-      throw new NotFoundException('Appointment not found');
-    }
-
-    await this.salonAccessService.assertCanAccessSalon(
-      userId,
-      role,
-      appointment.salonId,
-    );
-
-    return appointment;
-  }
-
-  async findAll(
-    userId: string,
-    role: UserRole,
-  ) {
-    let where = {};
-
-    if (role !== UserRole.SUPER_ADMIN) {
-      const memberships =
-        await this.prisma.salonMembership.findMany({
-          where: {
-            userId,
-            isActive: true,
-          },
-          select: {
-            salonId: true,
-          },
-        });
-
-      where = {
-        salonId: {
-          in: memberships.map(
-            (membership) => membership.salonId,
-          ),
-        },
-      };
-    }
-
-    return this.prisma.appointment.findMany({
-      where,
-      orderBy: {
-        startAt: 'asc',
-      },
-      include: {
-        customer: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                phone: true,
-                firstName: true,
-                lastName: true,
-                role: true,
-              },
-            },
-          },
-        },
-        barber: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                phone: true,
-                firstName: true,
-                lastName: true,
-                role: true,
-              },
-            },
-          },
-        },
-        service: true,
-        salon: true,
-      },
+    prisma.appointment.findUnique.mockResolvedValue({
+      id: 'appointment-1',
+      salonId: 'salon-1',
     });
-  }
+  });
 
-  async updateStatus(
-    id: string,
-    dto: UpdateAppointmentStatusDto,
-    userId: string,
-    role: UserRole,
-  ) {
-    const appointment =
-      await this.prisma.appointment.findUnique({
-        where: { id },
+  describe('findAll', () => {
+    it('limits ADMIN to appointments in active salons', async () => {
+      await service.findAll('admin-1', UserRole.ADMIN);
+
+      expect(prisma.salonMembership.findMany).toHaveBeenCalledWith({
+        where: {
+          userId: 'admin-1',
+          isActive: true,
+        },
+        select: {
+          salonId: true,
+        },
       });
 
-    if (!appointment) {
-      throw new NotFoundException('Appointment not found');
-    }
-
-    await this.salonAccessService.assertCanAccessSalon(
-      userId,
-      role,
-      appointment.salonId,
-    );
-
-    const allowedTransitions: Record<
-      AppointmentStatus,
-      AppointmentStatus[]
-    > = {
-      [AppointmentStatus.PENDING]: [
-        AppointmentStatus.CONFIRMED,
-        AppointmentStatus.CANCELLED,
-      ],
-      [AppointmentStatus.CONFIRMED]: [
-        AppointmentStatus.COMPLETED,
-        AppointmentStatus.CANCELLED,
-        AppointmentStatus.NO_SHOW,
-      ],
-      [AppointmentStatus.COMPLETED]: [],
-      [AppointmentStatus.CANCELLED]: [],
-      [AppointmentStatus.NO_SHOW]: [],
-    };
-
-    const allowedStatuses =
-      allowedTransitions[appointment.status];
-
-    if (!allowedStatuses.includes(dto.status)) {
-      throw new ConflictException(
-        `Cannot change appointment status from ${appointment.status} to ${dto.status}`,
-      );
-    }
-
-    if (dto.status === AppointmentStatus.CONFIRMED) {
-      const overlappingAppointment =
-        await this.prisma.appointment.findFirst({
+      expect(prisma.appointment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
           where: {
-            id: {
-              not: appointment.id,
-            },
-            barberId: appointment.barberId,
-            status: {
-              in: [
-                AppointmentStatus.PENDING,
-                AppointmentStatus.CONFIRMED,
-              ],
-            },
-            startAt: {
-              lt: appointment.endAt,
-            },
-            endAt: {
-              gt: appointment.startAt,
+            salonId: {
+              in: ['salon-1'],
             },
           },
-        });
-
-      if (overlappingAppointment) {
-        throw new ConflictException(
-          'Cannot confirm appointment because the barber is already booked during this time',
-        );
-      }
-    }
-
-    try {
-      return await this.prisma.appointment.update({
-        where: { id },
-        data: {
-          status: dto.status,
-        },
-        include: {
-          customer: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  phone: true,
-                  firstName: true,
-                  lastName: true,
-                  role: true,
-                },
-              },
-            },
-          },
-          barber: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  phone: true,
-                  firstName: true,
-                  lastName: true,
-                  role: true,
-                },
-              },
-            },
-          },
-          service: true,
-          salon: true,
-        },
-      });
-    } catch (error) {
-      if (this.isAppointmentOverlapConstraintError(error)) {
-        throw new ConflictException(
-          'Cannot confirm appointment because the barber is already booked during this time',
-        );
-      }
-
-      throw error;
-    }
-  }
-
-  async remove(
-    id: string,
-    userId: string,
-    role: UserRole,
-  ) {
-    const appointment =
-      await this.prisma.appointment.findUnique({
-        where: { id },
-      });
-
-    if (!appointment) {
-      throw new NotFoundException('Appointment not found');
-    }
-
-    await this.salonAccessService.assertCanAccessSalon(
-      userId,
-      role,
-      appointment.salonId,
-    );
-
-    if (appointment.status === AppointmentStatus.COMPLETED) {
-      throw new ConflictException(
-        'Completed appointment cannot be cancelled',
+        }),
       );
-    }
-
-    if (appointment.status === AppointmentStatus.CANCELLED) {
-      throw new ConflictException(
-        'Appointment is already cancelled',
-      );
-    }
-
-    if (appointment.status === AppointmentStatus.NO_SHOW) {
-      throw new ConflictException(
-        'No-show appointment cannot be cancelled',
-      );
-    }
-
-    await this.prisma.appointment.update({
-      where: { id },
-      data: {
-        status: AppointmentStatus.CANCELLED,
-      },
     });
 
-    return {
-      message: 'Appointment cancelled successfully',
-    };
-  }
-}
+    it('allows SUPER_ADMIN to list appointments across all salons', async () => {
+      await service.findAll('super-admin-1', UserRole.SUPER_ADMIN);
+
+      expect(prisma.salonMembership.findMany).not.toHaveBeenCalled();
+
+      expect(prisma.appointment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {},
+        }),
+      );
+    });
+
+    it('returns no appointments when ADMIN has no active memberships', async () => {
+      prisma.salonMembership.findMany.mockResolvedValue([]);
+
+      await service.findAll('admin-2', UserRole.ADMIN);
+
+      expect(prisma.appointment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            salonId: {
+              in: [],
+            },
+          },
+        }),
+      );
+    });
+  });
+
+  describe('findById', () => {
+    it('checks salon access before returning an appointment to ADMIN', async () => {
+      await service.findById(
+        'appointment-1',
+        'admin-1',
+        UserRole.ADMIN,
+      );
+
+      expect(prisma.appointment.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            id: 'appointment-1',
+          },
+        }),
+      );
+
+      expect(salonAccessService.assertCanAccessSalon).toHaveBeenCalledWith(
+        'admin-1',
+        UserRole.ADMIN,
+        'salon-1',
+      );
+    });
+
+    it('checks salon access for SUPER_ADMIN as well', async () => {
+      await service.findById(
+        'appointment-1',
+        'super-admin-1',
+        UserRole.SUPER_ADMIN,
+      );
+
+      expect(salonAccessService.assertCanAccessSalon).toHaveBeenCalledWith(
+        'super-admin-1',
+        UserRole.SUPER_ADMIN,
+        'salon-1',
+      );
+    });
+  });
+});

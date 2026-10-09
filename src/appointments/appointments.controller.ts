@@ -20,20 +20,15 @@ import type { CurrentUserData } from '../auth/decorators/current-user.decorator.
 import { AppointmentsService } from './appointments.service.js';
 import { CreateAppointmentDto } from './dto/create-appointment.dto.js';
 import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto.js';
+import { CreateAdminAppointmentDto } from './dto/create-admin-appointment.dto.js';
 
 @Controller('appointments')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AppointmentsController {
-  constructor(
-    private readonly appointmentsService: AppointmentsService,
-  ) { }
+  constructor(private readonly appointmentsService: AppointmentsService) {}
 
   @Post()
-  @Roles(
-    UserRole.CUSTOMER,
-    UserRole.ADMIN,
-    UserRole.SUPER_ADMIN,
-  )
+  @Roles(UserRole.CUSTOMER)
   create(
     @CurrentUser() user: CurrentUserData,
     @Body() dto: CreateAppointmentDto,
@@ -41,28 +36,25 @@ export class AppointmentsController {
     return this.appointmentsService.create(user.id, dto);
   }
 
+  @Post('admin')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  createForAdmin(
+    @CurrentUser() user: CurrentUserData,
+    @Body() dto: CreateAdminAppointmentDto,
+  ) {
+    return this.appointmentsService.createForAdmin(user.id, user.role, dto);
+  }
+
   @Get()
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-  findAll(
-    @CurrentUser() user: CurrentUserData,
-  ) {
-    return this.appointmentsService.findAll(
-      user.id,
-      user.role,
-    );
+  findAll(@CurrentUser() user: CurrentUserData) {
+    return this.appointmentsService.findAll(user.id, user.role);
   }
 
   @Get(':id')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-  findById(
-    @Param('id') id: string,
-    @CurrentUser() user: CurrentUserData,
-  ) {
-    return this.appointmentsService.findById(
-      id,
-      user.id,
-      user.role,
-    );
+  findById(@Param('id') id: string, @CurrentUser() user: CurrentUserData) {
+    return this.appointmentsService.findById(id, user.id, user.role);
   }
 
   @Patch(':id/status')
@@ -72,24 +64,12 @@ export class AppointmentsController {
     @Body() dto: UpdateAppointmentStatusDto,
     @CurrentUser() user: CurrentUserData,
   ) {
-    return this.appointmentsService.updateStatus(
-      id,
-      dto,
-      user.id,
-      user.role,
-    );
+    return this.appointmentsService.updateStatus(id, dto, user.id, user.role);
   }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-  remove(
-    @Param('id') id: string,
-    @CurrentUser() user: CurrentUserData,
-  ) {
-    return this.appointmentsService.remove(
-      id,
-      user.id,
-      user.role,
-    );
+  remove(@Param('id') id: string, @CurrentUser() user: CurrentUserData) {
+    return this.appointmentsService.remove(id, user.id, user.role);
   }
 }

@@ -1,4 +1,3 @@
-
 import 'dotenv/config';
 
 import { afterAll, describe, expect, it } from 'vitest';
@@ -16,9 +15,7 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString }),
 });
 
-async function createProbeTable(
-  tx: Prisma.TransactionClient,
-) {
+async function createProbeTable(tx: Prisma.TransactionClient) {
   await tx.$executeRawUnsafe(`
     CREATE TEMP TABLE "AppointmentOverlapProbe" (
       "barberId" TEXT NOT NULL,
