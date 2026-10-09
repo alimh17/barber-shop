@@ -78,6 +78,22 @@ export class AppointmentsService {
     role: UserRole,
     dto: CreateAdminAppointmentDto,
   ) {
+    // Authorize against the barber's salon before looking up customerId.
+    // This prevents an admin without salon access from probing customer IDs.
+    const barber = await this.prisma.barber.findUnique({
+      where: { id: dto.barberId },
+    });
+
+    if (!barber) {
+      throw new NotFoundException('Barber not found');
+    }
+
+    await this.salonAccessService.assertCanAccessSalon(
+      userId,
+      role,
+      barber.salonId,
+    );
+
     const customer = await this.prisma.customer.findUnique({
       where: { id: dto.customerId },
     });
