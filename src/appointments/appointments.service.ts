@@ -462,7 +462,7 @@ export class AppointmentsService {
           updatedAt: appointment.updatedAt,
           status: appointment.status,
         },
-        data: { ...(dto.note !== undefined ? { note: dto.note } : {}) },
+        data: { note: dto.note },
       });
 
       if (result.count === 0) {

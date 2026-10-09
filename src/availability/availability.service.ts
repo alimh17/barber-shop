@@ -222,7 +222,6 @@ export class AvailabilityService {
       });
 
     const slots = this.generateSlots({
-      date,
       timezone: salon.timezone,
       workingStart,
       workingEnd,
@@ -250,7 +249,6 @@ export class AvailabilityService {
   }
 
   private generateSlots(params: {
-    date: string;
     timezone: string;
     workingStart: Date;
     workingEnd: Date;
@@ -259,7 +257,6 @@ export class AvailabilityService {
     existingAppointments: ExistingAppointment[];
   }) {
     const {
-      date,
       timezone,
       workingStart,
       workingEnd,
@@ -438,45 +435,53 @@ export class AvailabilityService {
     return result;
   }
 
+  private validateDateString(date: string): void {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new BadRequestException(
+        'Date must use YYYY-MM-DD format',
+      );
+    }
+
+    const [year, month, day] = date.split('-').map(Number);
+    const parsed = new Date(Date.UTC(year, month - 1, day));
+
+    if (
+      parsed.getUTCFullYear() !== year ||
+      parsed.getUTCMonth() !== month - 1 ||
+      parsed.getUTCDate() !== day
+    ) {
+      throw new BadRequestException('Invalid calendar date');
+    }
+  }
+
   private localDateTimeToUtc(
     date: string,
     time: string,
     timezone: string,
   ): Date {
-    const [year, month, day] =
-      date.split('-').map(Number);
+    this.validateDateString(date);
 
-    const [hour, minute] =
-      time.split(':').map(Number);
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+      throw new BadRequestException('Invalid date or time');
+    }
 
+    const [year, month, day] = date.split('-').map(Number);
+    const [hour, minute] = time.split(':').map(Number);
+    const utcGuess = Date.UTC(year, month - 1, day, hour, minute);
+    const offset = this.getTimezoneOffset(new Date(utcGuess), timezone);
+    const result = new Date(utcGuess - offset);
+
+    // Reject local times that do not exist during a DST spring-forward gap.
     if (
-      !year ||
-      !month ||
-      !day ||
-      Number.isNaN(hour) ||
-      Number.isNaN(minute)
+      this.formatLocalDateTime(result, timezone) !==
+      `${date}T${time}`
     ) {
       throw new BadRequestException(
-        'Invalid date or time',
+        'Invalid local date or time for the salon timezone',
       );
     }
 
-    const utcGuess = Date.UTC(
-      year,
-      month - 1,
-      day,
-      hour,
-      minute,
-    );
-
-    const offset = this.getTimezoneOffset(
-      new Date(utcGuess),
-      timezone,
-    );
-
-    return new Date(
-      utcGuess - offset,
-    );
+    return result;
   }
 
   private getTimezoneOffset(

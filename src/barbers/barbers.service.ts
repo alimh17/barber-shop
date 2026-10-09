@@ -222,9 +222,7 @@ export class BarbersService {
         where: {
           id,
         },
-        data: {
-          ...(isActive !== undefined ? { isActive } : {}),
-        },
+        data: { isActive },
         include: {
           user: {
             select: {

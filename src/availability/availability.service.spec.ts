@@ -98,6 +98,18 @@ describe('AvailabilityService', () => {
     prisma.appointment.findMany.mockResolvedValue([]);
   });
 
+  it.each([
+    ['wrong format', '2030-1-01'],
+    ['impossible calendar date', '2030-02-31'],
+    ['invalid leap day', '2031-02-29'],
+  ])('rejects an invalid availability date (%s)', async (_label, date) => {
+    await expect(
+      service.getAvailability({ ...dto, date }),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(prisma.salon.findUnique).not.toHaveBeenCalled();
+  });
+
   it('throws when the salon does not exist', async () => {
     prisma.salon.findUnique.mockResolvedValue(null);
 

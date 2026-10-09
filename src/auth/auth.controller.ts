@@ -14,9 +14,6 @@ import { RequestOtpDto } from './dto/request-otp.dto.js';
 import { RefreshTokenDto } from './dto/refresh-token.dto.js';
 import { VerifyOtpDto } from './dto/verify-otp.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
-import { RolesGuard } from './guards/roles.guard.js';
-import { UserRole } from '../generated/prisma/enums.js';
-import { Roles } from './decorators/roles.decorator.js';
 
 @Controller('auth')
 export class AuthController {
