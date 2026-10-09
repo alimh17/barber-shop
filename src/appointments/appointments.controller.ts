@@ -21,6 +21,7 @@ import { AppointmentsService } from './appointments.service.js';
 import { CreateAppointmentDto } from './dto/create-appointment.dto.js';
 import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto.js';
 import { CreateAdminAppointmentDto } from './dto/create-admin-appointment.dto.js';
+import { UpdateAppointmentDto } from './dto/update-appointment.dto.js';
 
 @Controller('appointments')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -55,6 +56,16 @@ export class AppointmentsController {
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   findById(@Param('id') id: string, @CurrentUser() user: CurrentUserData) {
     return this.appointmentsService.findById(id, user.id, user.role);
+  }
+
+  @Patch(':id')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateAppointmentDto,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    return this.appointmentsService.update(id, dto, user.id, user.role);
   }
 
   @Patch(':id/status')

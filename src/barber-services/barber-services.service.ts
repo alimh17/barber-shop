@@ -4,15 +4,22 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { UserRole } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { SalonAccessService } from '../salons/salon-access.service.js';
 
 @Injectable()
 export class BarberServicesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly salonAccessService: SalonAccessService,
+  ) {}
 
   async attach(
     barberId: string,
     serviceId: string,
+    userId: string,
+    role: UserRole,
   ) {
     const barber = await this.prisma.barber.findUnique({
       where: {
@@ -28,10 +35,14 @@ export class BarberServicesService {
       throw new NotFoundException('Barber not found');
     }
 
+    await this.salonAccessService.assertCanAccessSalon(
+      userId,
+      role,
+      barber.salonId,
+    );
+
     if (!barber.isActive) {
-      throw new ConflictException(
-        'Cannot attach service to inactive barber',
-      );
+      throw new ConflictException('Cannot attach service to inactive barber');
     }
 
     const service = await this.prisma.service.findUnique({
@@ -44,32 +55,27 @@ export class BarberServicesService {
       throw new NotFoundException('Service not found');
     }
 
-    if (!service.isActive) {
-      throw new ConflictException(
-        'Cannot attach inactive service',
-      );
-    }
-
     if (barber.salonId !== service.salonId) {
       throw new ConflictException(
         'Barber and service must belong to the same salon',
       );
     }
 
-    const existing =
-      await this.prisma.barberService.findUnique({
-        where: {
-          barberId_serviceId: {
-            barberId,
-            serviceId,
-          },
+    if (!service.isActive) {
+      throw new ConflictException('Cannot attach inactive service');
+    }
+
+    const existing = await this.prisma.barberService.findUnique({
+      where: {
+        barberId_serviceId: {
+          barberId,
+          serviceId,
         },
-      });
+      },
+    });
 
     if (existing) {
-      throw new ConflictException(
-        'Service is already assigned to this barber',
-      );
+      throw new ConflictException('Service is already assigned to this barber');
     }
 
     return this.prisma.barberService.create({
@@ -91,20 +97,35 @@ export class BarberServicesService {
   async detach(
     barberId: string,
     serviceId: string,
+    userId: string,
+    role: UserRole,
   ) {
-    const existing =
-      await this.prisma.barberService.findUnique({
-        where: {
-          barberId_serviceId: {
-            barberId,
-            serviceId,
-          },
+    const existing = await this.prisma.barberService.findUnique({
+      where: {
+        barberId_serviceId: {
+          barberId,
+          serviceId,
         },
-      });
+      },
+      include: {
+        barber: true,
+        service: true,
+      },
+    });
 
     if (!existing) {
-      throw new NotFoundException(
-        'Service is not assigned to this barber',
+      throw new NotFoundException('Service is not assigned to this barber');
+    }
+
+    await this.salonAccessService.assertCanAccessSalon(
+      userId,
+      role,
+      existing.barber.salonId,
+    );
+
+    if (existing.barber.salonId !== existing.service.salonId) {
+      throw new ConflictException(
+        'Barber and service must belong to the same salon',
       );
     }
 
@@ -122,7 +143,7 @@ export class BarberServicesService {
     };
   }
 
-  async findByBarber(barberId: string) {
+  async findByBarber(barberId: string, userId: string, role: UserRole) {
     const barber = await this.prisma.barber.findUnique({
       where: {
         id: barberId,
@@ -132,6 +153,12 @@ export class BarberServicesService {
     if (!barber) {
       throw new NotFoundException('Barber not found');
     }
+
+    await this.salonAccessService.assertCanAccessSalon(
+      userId,
+      role,
+      barber.salonId,
+    );
 
     return this.prisma.barberService.findMany({
       where: {
@@ -146,7 +173,7 @@ export class BarberServicesService {
     });
   }
 
-  async findByService(serviceId: string) {
+  async findByService(serviceId: string, userId: string, role: UserRole) {
     const service = await this.prisma.service.findUnique({
       where: {
         id: serviceId,
@@ -156,6 +183,12 @@ export class BarberServicesService {
     if (!service) {
       throw new NotFoundException('Service not found');
     }
+
+    await this.salonAccessService.assertCanAccessSalon(
+      userId,
+      role,
+      service.salonId,
+    );
 
     return this.prisma.barberService.findMany({
       where: {

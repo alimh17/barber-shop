@@ -12,6 +12,7 @@ import { SalonAccessService } from '../salons/salon-access.service.js';
 import { CreateAdminAppointmentDto } from './dto/create-admin-appointment.dto.js';
 import { CreateAppointmentDto } from './dto/create-appointment.dto.js';
 import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto.js';
+import { UpdateAppointmentDto } from './dto/update-appointment.dto.js';
 
 @Injectable()
 export class AppointmentsService {
@@ -105,6 +106,7 @@ export class AppointmentsService {
     return this.createForCustomer(customer.id, dto, {
       userId,
       role,
+      authorizedSalonId: barber.salonId,
     });
   }
 
@@ -118,6 +120,7 @@ export class AppointmentsService {
     accessContext?: {
       userId: string;
       role: UserRole;
+      authorizedSalonId: string;
     },
   ) {
     const startAt = new Date(dto.startAt);
@@ -149,6 +152,16 @@ export class AppointmentsService {
       throw new ConflictException('Cannot book an inactive barber');
     }
 
+    // Re-check authorization only if the barber's salon changed after the
+    // initial authorization in createForAdmin.
+    if (accessContext && barber.salonId !== accessContext.authorizedSalonId) {
+      await this.salonAccessService.assertCanAccessSalon(
+        accessContext.userId,
+        accessContext.role,
+        barber.salonId,
+      );
+    }
+
     if (!service) {
       throw new NotFoundException('Service not found');
     }
@@ -160,15 +173,6 @@ export class AppointmentsService {
     if (barber.salonId !== service.salonId) {
       throw new BadRequestException(
         'Barber and service must belong to the same salon',
-      );
-    }
-
-    // برای رزرو مدیریتی، دسترسی به سالن باید تأیید شود.
-    if (accessContext) {
-      await this.salonAccessService.assertCanAccessSalon(
-        accessContext.userId,
-        accessContext.role,
-        barber.salonId,
       );
     }
 
@@ -391,6 +395,165 @@ export class AppointmentsService {
   }
 
   /**
+   * ویرایش نوبت توسط مدیر سالن با اعتبارسنجی زمان، خدمت و دسترسی.
+   */
+  async update(
+    id: string,
+    dto: UpdateAppointmentDto,
+    userId: string,
+    role: UserRole,
+  ) {
+    const appointment = await this.prisma.appointment.findUnique({
+      where: { id },
+    });
+
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+
+    await this.salonAccessService.assertCanAccessSalon(
+      userId,
+      role,
+      appointment.salonId,
+    );
+
+    if (
+      appointment.status !== AppointmentStatus.PENDING &&
+      appointment.status !== AppointmentStatus.CONFIRMED
+    ) {
+      throw new ConflictException(
+        `Cannot edit an appointment with status ${appointment.status}`,
+      );
+    }
+
+    const barberId = dto.barberId ?? appointment.barberId;
+    const serviceId = dto.serviceId ?? appointment.serviceId;
+    const startAt = dto.startAt === undefined
+      ? appointment.startAt
+      : new Date(dto.startAt);
+
+    if (Number.isNaN(startAt.getTime())) {
+      throw new BadRequestException('Invalid startAt');
+    }
+
+    if (startAt <= new Date()) {
+      throw new BadRequestException('Appointment cannot be scheduled in the past');
+    }
+
+    const [barber, service] = await Promise.all([
+      this.prisma.barber.findUnique({ where: { id: barberId } }),
+      this.prisma.service.findUnique({ where: { id: serviceId } }),
+    ]);
+
+    if (!barber) {
+      throw new NotFoundException('Barber not found');
+    }
+    if (!service) {
+      throw new NotFoundException('Service not found');
+    }
+    if (!barber.isActive) {
+      throw new ConflictException('Cannot book an inactive barber');
+    }
+    if (!service.isActive) {
+      throw new ConflictException('Cannot book an inactive service');
+    }
+
+    // An edit may change the barber/service, but never move the appointment
+    // to a different salon (even if both selected records belong together).
+    if (
+      barber.salonId !== appointment.salonId ||
+      service.salonId !== appointment.salonId ||
+      barber.salonId !== service.salonId
+    ) {
+      throw new BadRequestException(
+        'Appointment, barber and service must belong to the same salon',
+      );
+    }
+
+    const barberService = await this.prisma.barberService.findUnique({
+      where: {
+        barberId_serviceId: { barberId: barber.id, serviceId: service.id },
+      },
+    });
+
+    if (!barberService) {
+      throw new ConflictException(
+        'This barber does not provide the selected service',
+      );
+    }
+
+    const slotValidation = await this.availabilityService.validateBookingSlot({
+      salonId: appointment.salonId,
+      barberId: barber.id,
+      serviceId: service.id,
+      startAt,
+    });
+    const endAt = slotValidation.endAt;
+
+    const overlappingAppointment = await this.prisma.appointment.findFirst({
+      where: {
+        id: { not: appointment.id },
+        barberId: barber.id,
+        status: {
+          in: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED],
+        },
+        startAt: { lt: endAt },
+        endAt: { gt: startAt },
+      },
+    });
+
+    if (overlappingAppointment) {
+      throw new ConflictException('Barber is already booked during this time');
+    }
+
+    try {
+      // updatedAt acts as a compare-and-set token: concurrent edits/status
+      // changes cannot silently overwrite this update.
+      const result = await this.prisma.appointment.updateMany({
+        where: {
+          id,
+          updatedAt: appointment.updatedAt,
+          status: appointment.status,
+        },
+        data: {
+          barberId: barber.id,
+          serviceId: service.id,
+          startAt,
+          endAt,
+          duration: service.duration,
+          price: service.price,
+          ...(dto.note !== undefined ? { note: dto.note } : {}),
+        },
+      });
+
+      if (result.count === 0) {
+        throw new ConflictException(
+          'Appointment changed concurrently; refresh and try again',
+        );
+      }
+
+      return await this.prisma.appointment.findUnique({
+        where: { id },
+        include: {
+          customer: { include: { user: { select: {
+            id: true, phone: true, firstName: true, lastName: true, role: true,
+          } } } },
+          barber: { include: { user: { select: {
+            id: true, phone: true, firstName: true, lastName: true, role: true,
+          } } } },
+          service: true,
+          salon: true,
+        },
+      });
+    } catch (error) {
+      if (this.isAppointmentOverlapConstraintError(error)) {
+        throw new ConflictException('Barber is already booked during this time');
+      }
+      throw error;
+    }
+  }
+
+  /**
    * تغییر وضعیت نوبت با کنترل دسترسی سالن.
    */
   async updateStatus(
@@ -464,11 +627,26 @@ export class AppointmentsService {
     }
 
     try {
-      return await this.prisma.appointment.update({
-        where: { id },
+      // Compare-and-set: do not overwrite a status changed by another request
+      // after the initial read and transition validation.
+      const result = await this.prisma.appointment.updateMany({
+        where: {
+          id,
+          status: appointment.status,
+        },
         data: {
           status: dto.status,
         },
+      });
+
+      if (result.count === 0) {
+        throw new ConflictException(
+          'Appointment status changed concurrently; refresh and try again',
+        );
+      }
+
+      return await this.prisma.appointment.findUnique({
+        where: { id },
         include: {
           customer: {
             include: {
@@ -541,12 +719,21 @@ export class AppointmentsService {
       throw new ConflictException('No-show appointment cannot be cancelled');
     }
 
-    await this.prisma.appointment.update({
-      where: { id },
+    const result = await this.prisma.appointment.updateMany({
+      where: {
+        id,
+        status: appointment.status,
+      },
       data: {
         status: AppointmentStatus.CANCELLED,
       },
     });
+
+    if (result.count === 0) {
+      throw new ConflictException(
+        'Appointment status changed concurrently; refresh and try again',
+      );
+    }
 
     return {
       message: 'Appointment cancelled successfully',

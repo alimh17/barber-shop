@@ -93,6 +93,7 @@ describe('AppointmentsService.createForAdmin', () => {
     expect(prisma.customer.findUnique).toHaveBeenCalledWith({
       where: { id: 'customer-1' },
     });
+    expect(salonAccessService.assertCanAccessSalon).toHaveBeenCalledTimes(1);
     expect(prisma.appointment.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -119,6 +120,49 @@ describe('AppointmentsService.createForAdmin', () => {
       'salon-1',
     );
     expect(prisma.appointment.create).not.toHaveBeenCalled();
+  });
+
+  it('re-checks authorization if the barber changes salons during creation', async () => {
+    prisma.barber.findUnique
+      .mockResolvedValueOnce({
+        id: 'barber-1',
+        salonId: 'salon-1',
+        isActive: true,
+      })
+      .mockResolvedValueOnce({
+        id: 'barber-1',
+        salonId: 'salon-2',
+        isActive: true,
+      });
+    prisma.service.findUnique.mockResolvedValue({
+      id: 'service-1',
+      salonId: 'salon-2',
+      isActive: true,
+      duration: 30,
+      price: '25.00',
+    });
+
+    await expect(
+      service.createForAdmin('admin-1', UserRole.ADMIN, dto),
+    ).resolves.toEqual({ id: 'appointment-1' });
+
+    expect(salonAccessService.assertCanAccessSalon).toHaveBeenNthCalledWith(
+      1,
+      'admin-1',
+      UserRole.ADMIN,
+      'salon-1',
+    );
+    expect(salonAccessService.assertCanAccessSalon).toHaveBeenNthCalledWith(
+      2,
+      'admin-1',
+      UserRole.ADMIN,
+      'salon-2',
+    );
+    expect(prisma.appointment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ salonId: 'salon-2' }),
+      }),
+    );
   });
 
   it('maps PostgreSQL overlap constraint errors to ConflictException', async () => {
