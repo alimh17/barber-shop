@@ -21,6 +21,9 @@ export class OtpService {
     const expiresAt = new Date(Date.now() + this.otpExpiresInMs);
 
     await this.prisma.$transaction(async (tx) => {
+      // Serialize OTP generation per phone across application instances.
+      // PostgreSQL releases this transaction-scoped advisory lock on commit/rollback.
+      await tx.$queryRaw`SELECT 1 WHERE pg_advisory_xact_lock(hashtextextended(${phone}, 0)) IS NULL`;
       await tx.otpCode.updateMany({
         where: { phone, usedAt: null },
         data: { usedAt: new Date() },

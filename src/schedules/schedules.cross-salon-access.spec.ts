@@ -71,6 +71,19 @@ describe('Schedule services cross-salon authorization', () => {
     expect(prisma.workingHour.upsert).not.toHaveBeenCalled();
   });
 
+  it('rejects cross-salon working-hours deletes before looking up the schedule', async () => {
+    await expect(
+      workingHours.remove(
+        'barber-other',
+        'MONDAY' as never,
+        'admin-one',
+        UserRole.ADMIN,
+      ),
+    ).rejects.toThrow(ForbiddenException);
+    expect(prisma.workingHour.findUnique).not.toHaveBeenCalled();
+    expect(prisma.workingHour.delete).not.toHaveBeenCalled();
+  });
+
   it('rejects cross-salon days-off reads before querying schedules', async () => {
     await expect(
       daysOff.findByBarber('barber-other', 'admin-one', UserRole.ADMIN),
@@ -88,5 +101,13 @@ describe('Schedule services cross-salon authorization', () => {
       ),
     ).rejects.toThrow(ForbiddenException);
     expect(prisma.dayOff.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects cross-salon days-off deletes before looking up the record', async () => {
+    await expect(
+      daysOff.remove('barber-other', '2026-11-12', 'admin-one', UserRole.ADMIN),
+    ).rejects.toThrow(ForbiddenException);
+    expect(prisma.dayOff.findUnique).not.toHaveBeenCalled();
+    expect(prisma.dayOff.delete).not.toHaveBeenCalled();
   });
 });
