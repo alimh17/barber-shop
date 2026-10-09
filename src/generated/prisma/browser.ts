@@ -33,6 +33,11 @@ export type OtpCode = Prisma.OtpCodeModel
  */
 export type Salon = Prisma.SalonModel
 /**
+ * Model SalonMembership
+ * 
+ */
+export type SalonMembership = Prisma.SalonMembershipModel
+/**
  * Model Customer
  * 
  */

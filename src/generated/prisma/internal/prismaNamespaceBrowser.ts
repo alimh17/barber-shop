@@ -54,6 +54,7 @@ export const ModelName = {
   User: 'User',
   OtpCode: 'OtpCode',
   Salon: 'Salon',
+  SalonMembership: 'SalonMembership',
   Customer: 'Customer',
   Barber: 'Barber',
   Service: 'Service',
@@ -121,6 +122,18 @@ export const SalonScalarFieldEnum = {
 } as const
 
 export type SalonScalarFieldEnum = (typeof SalonScalarFieldEnum)[keyof typeof SalonScalarFieldEnum]
+
+
+export const SalonMembershipScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  salonId: 'salonId',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SalonMembershipScalarFieldEnum = (typeof SalonMembershipScalarFieldEnum)[keyof typeof SalonMembershipScalarFieldEnum]
 
 
 export const CustomerScalarFieldEnum = {

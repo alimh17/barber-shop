@@ -20,50 +20,47 @@ export class AppointmentsService {
     private readonly availabilityService: AvailabilityService,
   ) { }
 
-  private isAppointmentOverlapConstraintError(
-    error: unknown,
-  ): boolean {
-    if (
-      typeof error !== 'object' ||
-      error === null
-    ) {
-      return false;
-    }
-
-    const candidate = error as {
-      code?: unknown;
-      message?: unknown;
-      meta?: unknown;
-    };
-
-    const details = [
-      candidate.message,
-      candidate.meta,
-    ]
-      .map((value) => {
-        if (typeof value === 'string') {
-          return value;
-        }
-
-        try {
-          return JSON.stringify(value ?? '');
-        } catch {
-          return '';
-        }
-      })
-      .join(' ');
-
-    // PostgreSQL exclusion_violation
-    if (candidate.code === '23P01') {
-      return true;
-    }
-
-    // Prisma may wrap the database error.
-    // Match the specific constraint, not every P2004.
-    return details.includes(
-      'appointment_no_overlap',
-    );
+ 
+private isAppointmentOverlapConstraintError(
+  error: unknown,
+): boolean {
+  if (typeof error !== 'object' || error === null) {
+    return false;
   }
+
+  const candidate = error as {
+    message?: unknown;
+    meta?: {
+      driverAdapterError?: {
+        cause?: {
+          code?: unknown;
+          originalCode?: unknown;
+          message?: unknown;
+          originalMessage?: unknown;
+        };
+      };
+    };
+  };
+
+  const cause =
+    candidate.meta?.driverAdapterError?.cause;
+
+  const messages = [
+    candidate.message,
+    cause?.message,
+    cause?.originalMessage,
+  ]
+    .filter(
+      (value): value is string =>
+        typeof value === 'string',
+    )
+    .join(' ');
+
+  // Map only the specific PostgreSQL exclusion constraint.
+  return /constraint\s+["']appointment_no_overlap["']/i.test(
+    messages,
+  );
+}
 
   async create(
     userId: string,

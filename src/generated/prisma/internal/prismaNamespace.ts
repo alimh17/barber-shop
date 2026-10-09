@@ -400,6 +400,7 @@ export const ModelName = {
   User: 'User',
   OtpCode: 'OtpCode',
   Salon: 'Salon',
+  SalonMembership: 'SalonMembership',
   Customer: 'Customer',
   Barber: 'Barber',
   Service: 'Service',
@@ -422,7 +423,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "otpCode" | "salon" | "customer" | "barber" | "service" | "barberService" | "workingHour" | "dayOff" | "appointment"
+    modelProps: "user" | "otpCode" | "salon" | "salonMembership" | "customer" | "barber" | "service" | "barberService" | "workingHour" | "dayOff" | "appointment"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -645,6 +646,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.SalonCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.SalonCountAggregateOutputType> | number
+        }
+      }
+    }
+    SalonMembership: {
+      payload: Prisma.$SalonMembershipPayload<ExtArgs>
+      fields: Prisma.SalonMembershipFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SalonMembershipFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonMembershipPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SalonMembershipFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonMembershipPayload>
+        }
+        findFirst: {
+          args: Prisma.SalonMembershipFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonMembershipPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SalonMembershipFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonMembershipPayload>
+        }
+        findMany: {
+          args: Prisma.SalonMembershipFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonMembershipPayload>[]
+        }
+        create: {
+          args: Prisma.SalonMembershipCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonMembershipPayload>
+        }
+        createMany: {
+          args: Prisma.SalonMembershipCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SalonMembershipCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonMembershipPayload>[]
+        }
+        delete: {
+          args: Prisma.SalonMembershipDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonMembershipPayload>
+        }
+        update: {
+          args: Prisma.SalonMembershipUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonMembershipPayload>
+        }
+        deleteMany: {
+          args: Prisma.SalonMembershipDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SalonMembershipUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SalonMembershipUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonMembershipPayload>[]
+        }
+        upsert: {
+          args: Prisma.SalonMembershipUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonMembershipPayload>
+        }
+        aggregate: {
+          args: Prisma.SalonMembershipAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSalonMembership>
+        }
+        groupBy: {
+          args: Prisma.SalonMembershipGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SalonMembershipGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SalonMembershipCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SalonMembershipCountAggregateOutputType> | number
         }
       }
     }
@@ -1249,6 +1324,18 @@ export const SalonScalarFieldEnum = {
 export type SalonScalarFieldEnum = (typeof SalonScalarFieldEnum)[keyof typeof SalonScalarFieldEnum]
 
 
+export const SalonMembershipScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  salonId: 'salonId',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SalonMembershipScalarFieldEnum = (typeof SalonMembershipScalarFieldEnum)[keyof typeof SalonMembershipScalarFieldEnum]
+
+
 export const CustomerScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -1657,6 +1744,7 @@ export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
   otpCode?: Prisma.OtpCodeOmit
   salon?: Prisma.SalonOmit
+  salonMembership?: Prisma.SalonMembershipOmit
   customer?: Prisma.CustomerOmit
   barber?: Prisma.BarberOmit
   service?: Prisma.ServiceOmit

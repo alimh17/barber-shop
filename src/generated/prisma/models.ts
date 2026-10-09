@@ -11,6 +11,7 @@
 export type * from './models/User.js'
 export type * from './models/OtpCode.js'
 export type * from './models/Salon.js'
+export type * from './models/SalonMembership.js'
 export type * from './models/Customer.js'
 export type * from './models/Barber.js'
 export type * from './models/Service.js'

@@ -227,6 +227,7 @@ export type SalonWhereInput = {
   workingHours?: Prisma.WorkingHourListRelationFilter
   daysOff?: Prisma.DayOffListRelationFilter
   appointments?: Prisma.AppointmentListRelationFilter
+  memberships?: Prisma.SalonMembershipListRelationFilter
 }
 
 export type SalonOrderByWithRelationInput = {
@@ -245,6 +246,7 @@ export type SalonOrderByWithRelationInput = {
   workingHours?: Prisma.WorkingHourOrderByRelationAggregateInput
   daysOff?: Prisma.DayOffOrderByRelationAggregateInput
   appointments?: Prisma.AppointmentOrderByRelationAggregateInput
+  memberships?: Prisma.SalonMembershipOrderByRelationAggregateInput
 }
 
 export type SalonWhereUniqueInput = Prisma.AtLeast<{
@@ -266,6 +268,7 @@ export type SalonWhereUniqueInput = Prisma.AtLeast<{
   workingHours?: Prisma.WorkingHourListRelationFilter
   daysOff?: Prisma.DayOffListRelationFilter
   appointments?: Prisma.AppointmentListRelationFilter
+  memberships?: Prisma.SalonMembershipListRelationFilter
 }, "id" | "slug">
 
 export type SalonOrderByWithAggregationInput = {
@@ -316,6 +319,7 @@ export type SalonCreateInput = {
   workingHours?: Prisma.WorkingHourCreateNestedManyWithoutSalonInput
   daysOff?: Prisma.DayOffCreateNestedManyWithoutSalonInput
   appointments?: Prisma.AppointmentCreateNestedManyWithoutSalonInput
+  memberships?: Prisma.SalonMembershipCreateNestedManyWithoutSalonInput
 }
 
 export type SalonUncheckedCreateInput = {
@@ -334,6 +338,7 @@ export type SalonUncheckedCreateInput = {
   workingHours?: Prisma.WorkingHourUncheckedCreateNestedManyWithoutSalonInput
   daysOff?: Prisma.DayOffUncheckedCreateNestedManyWithoutSalonInput
   appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutSalonInput
+  memberships?: Prisma.SalonMembershipUncheckedCreateNestedManyWithoutSalonInput
 }
 
 export type SalonUpdateInput = {
@@ -352,6 +357,7 @@ export type SalonUpdateInput = {
   workingHours?: Prisma.WorkingHourUpdateManyWithoutSalonNestedInput
   daysOff?: Prisma.DayOffUpdateManyWithoutSalonNestedInput
   appointments?: Prisma.AppointmentUpdateManyWithoutSalonNestedInput
+  memberships?: Prisma.SalonMembershipUpdateManyWithoutSalonNestedInput
 }
 
 export type SalonUncheckedUpdateInput = {
@@ -370,6 +376,7 @@ export type SalonUncheckedUpdateInput = {
   workingHours?: Prisma.WorkingHourUncheckedUpdateManyWithoutSalonNestedInput
   daysOff?: Prisma.DayOffUncheckedUpdateManyWithoutSalonNestedInput
   appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutSalonNestedInput
+  memberships?: Prisma.SalonMembershipUncheckedUpdateManyWithoutSalonNestedInput
 }
 
 export type SalonCreateManyInput = {
@@ -459,6 +466,20 @@ export type BoolFieldUpdateOperationsInput = {
   set?: boolean
 }
 
+export type SalonCreateNestedOneWithoutMembershipsInput = {
+  create?: Prisma.XOR<Prisma.SalonCreateWithoutMembershipsInput, Prisma.SalonUncheckedCreateWithoutMembershipsInput>
+  connectOrCreate?: Prisma.SalonCreateOrConnectWithoutMembershipsInput
+  connect?: Prisma.SalonWhereUniqueInput
+}
+
+export type SalonUpdateOneRequiredWithoutMembershipsNestedInput = {
+  create?: Prisma.XOR<Prisma.SalonCreateWithoutMembershipsInput, Prisma.SalonUncheckedCreateWithoutMembershipsInput>
+  connectOrCreate?: Prisma.SalonCreateOrConnectWithoutMembershipsInput
+  upsert?: Prisma.SalonUpsertWithoutMembershipsInput
+  connect?: Prisma.SalonWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.SalonUpdateToOneWithWhereWithoutMembershipsInput, Prisma.SalonUpdateWithoutMembershipsInput>, Prisma.SalonUncheckedUpdateWithoutMembershipsInput>
+}
+
 export type SalonCreateNestedOneWithoutBarbersInput = {
   create?: Prisma.XOR<Prisma.SalonCreateWithoutBarbersInput, Prisma.SalonUncheckedCreateWithoutBarbersInput>
   connectOrCreate?: Prisma.SalonCreateOrConnectWithoutBarbersInput
@@ -529,6 +550,94 @@ export type SalonUpdateOneRequiredWithoutAppointmentsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.SalonUpdateToOneWithWhereWithoutAppointmentsInput, Prisma.SalonUpdateWithoutAppointmentsInput>, Prisma.SalonUncheckedUpdateWithoutAppointmentsInput>
 }
 
+export type SalonCreateWithoutMembershipsInput = {
+  id?: string
+  name: string
+  slug: string
+  phone?: string | null
+  address?: string | null
+  description?: string | null
+  timezone?: string
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  barbers?: Prisma.BarberCreateNestedManyWithoutSalonInput
+  services?: Prisma.ServiceCreateNestedManyWithoutSalonInput
+  workingHours?: Prisma.WorkingHourCreateNestedManyWithoutSalonInput
+  daysOff?: Prisma.DayOffCreateNestedManyWithoutSalonInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutSalonInput
+}
+
+export type SalonUncheckedCreateWithoutMembershipsInput = {
+  id?: string
+  name: string
+  slug: string
+  phone?: string | null
+  address?: string | null
+  description?: string | null
+  timezone?: string
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  barbers?: Prisma.BarberUncheckedCreateNestedManyWithoutSalonInput
+  services?: Prisma.ServiceUncheckedCreateNestedManyWithoutSalonInput
+  workingHours?: Prisma.WorkingHourUncheckedCreateNestedManyWithoutSalonInput
+  daysOff?: Prisma.DayOffUncheckedCreateNestedManyWithoutSalonInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutSalonInput
+}
+
+export type SalonCreateOrConnectWithoutMembershipsInput = {
+  where: Prisma.SalonWhereUniqueInput
+  create: Prisma.XOR<Prisma.SalonCreateWithoutMembershipsInput, Prisma.SalonUncheckedCreateWithoutMembershipsInput>
+}
+
+export type SalonUpsertWithoutMembershipsInput = {
+  update: Prisma.XOR<Prisma.SalonUpdateWithoutMembershipsInput, Prisma.SalonUncheckedUpdateWithoutMembershipsInput>
+  create: Prisma.XOR<Prisma.SalonCreateWithoutMembershipsInput, Prisma.SalonUncheckedCreateWithoutMembershipsInput>
+  where?: Prisma.SalonWhereInput
+}
+
+export type SalonUpdateToOneWithWhereWithoutMembershipsInput = {
+  where?: Prisma.SalonWhereInput
+  data: Prisma.XOR<Prisma.SalonUpdateWithoutMembershipsInput, Prisma.SalonUncheckedUpdateWithoutMembershipsInput>
+}
+
+export type SalonUpdateWithoutMembershipsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  barbers?: Prisma.BarberUpdateManyWithoutSalonNestedInput
+  services?: Prisma.ServiceUpdateManyWithoutSalonNestedInput
+  workingHours?: Prisma.WorkingHourUpdateManyWithoutSalonNestedInput
+  daysOff?: Prisma.DayOffUpdateManyWithoutSalonNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutSalonNestedInput
+}
+
+export type SalonUncheckedUpdateWithoutMembershipsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  barbers?: Prisma.BarberUncheckedUpdateManyWithoutSalonNestedInput
+  services?: Prisma.ServiceUncheckedUpdateManyWithoutSalonNestedInput
+  workingHours?: Prisma.WorkingHourUncheckedUpdateManyWithoutSalonNestedInput
+  daysOff?: Prisma.DayOffUncheckedUpdateManyWithoutSalonNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutSalonNestedInput
+}
+
 export type SalonCreateWithoutBarbersInput = {
   id?: string
   name: string
@@ -544,6 +653,7 @@ export type SalonCreateWithoutBarbersInput = {
   workingHours?: Prisma.WorkingHourCreateNestedManyWithoutSalonInput
   daysOff?: Prisma.DayOffCreateNestedManyWithoutSalonInput
   appointments?: Prisma.AppointmentCreateNestedManyWithoutSalonInput
+  memberships?: Prisma.SalonMembershipCreateNestedManyWithoutSalonInput
 }
 
 export type SalonUncheckedCreateWithoutBarbersInput = {
@@ -561,6 +671,7 @@ export type SalonUncheckedCreateWithoutBarbersInput = {
   workingHours?: Prisma.WorkingHourUncheckedCreateNestedManyWithoutSalonInput
   daysOff?: Prisma.DayOffUncheckedCreateNestedManyWithoutSalonInput
   appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutSalonInput
+  memberships?: Prisma.SalonMembershipUncheckedCreateNestedManyWithoutSalonInput
 }
 
 export type SalonCreateOrConnectWithoutBarbersInput = {
@@ -594,6 +705,7 @@ export type SalonUpdateWithoutBarbersInput = {
   workingHours?: Prisma.WorkingHourUpdateManyWithoutSalonNestedInput
   daysOff?: Prisma.DayOffUpdateManyWithoutSalonNestedInput
   appointments?: Prisma.AppointmentUpdateManyWithoutSalonNestedInput
+  memberships?: Prisma.SalonMembershipUpdateManyWithoutSalonNestedInput
 }
 
 export type SalonUncheckedUpdateWithoutBarbersInput = {
@@ -611,6 +723,7 @@ export type SalonUncheckedUpdateWithoutBarbersInput = {
   workingHours?: Prisma.WorkingHourUncheckedUpdateManyWithoutSalonNestedInput
   daysOff?: Prisma.DayOffUncheckedUpdateManyWithoutSalonNestedInput
   appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutSalonNestedInput
+  memberships?: Prisma.SalonMembershipUncheckedUpdateManyWithoutSalonNestedInput
 }
 
 export type SalonCreateWithoutServicesInput = {
@@ -628,6 +741,7 @@ export type SalonCreateWithoutServicesInput = {
   workingHours?: Prisma.WorkingHourCreateNestedManyWithoutSalonInput
   daysOff?: Prisma.DayOffCreateNestedManyWithoutSalonInput
   appointments?: Prisma.AppointmentCreateNestedManyWithoutSalonInput
+  memberships?: Prisma.SalonMembershipCreateNestedManyWithoutSalonInput
 }
 
 export type SalonUncheckedCreateWithoutServicesInput = {
@@ -645,6 +759,7 @@ export type SalonUncheckedCreateWithoutServicesInput = {
   workingHours?: Prisma.WorkingHourUncheckedCreateNestedManyWithoutSalonInput
   daysOff?: Prisma.DayOffUncheckedCreateNestedManyWithoutSalonInput
   appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutSalonInput
+  memberships?: Prisma.SalonMembershipUncheckedCreateNestedManyWithoutSalonInput
 }
 
 export type SalonCreateOrConnectWithoutServicesInput = {
@@ -678,6 +793,7 @@ export type SalonUpdateWithoutServicesInput = {
   workingHours?: Prisma.WorkingHourUpdateManyWithoutSalonNestedInput
   daysOff?: Prisma.DayOffUpdateManyWithoutSalonNestedInput
   appointments?: Prisma.AppointmentUpdateManyWithoutSalonNestedInput
+  memberships?: Prisma.SalonMembershipUpdateManyWithoutSalonNestedInput
 }
 
 export type SalonUncheckedUpdateWithoutServicesInput = {
@@ -695,6 +811,7 @@ export type SalonUncheckedUpdateWithoutServicesInput = {
   workingHours?: Prisma.WorkingHourUncheckedUpdateManyWithoutSalonNestedInput
   daysOff?: Prisma.DayOffUncheckedUpdateManyWithoutSalonNestedInput
   appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutSalonNestedInput
+  memberships?: Prisma.SalonMembershipUncheckedUpdateManyWithoutSalonNestedInput
 }
 
 export type SalonCreateWithoutWorkingHoursInput = {
@@ -712,6 +829,7 @@ export type SalonCreateWithoutWorkingHoursInput = {
   services?: Prisma.ServiceCreateNestedManyWithoutSalonInput
   daysOff?: Prisma.DayOffCreateNestedManyWithoutSalonInput
   appointments?: Prisma.AppointmentCreateNestedManyWithoutSalonInput
+  memberships?: Prisma.SalonMembershipCreateNestedManyWithoutSalonInput
 }
 
 export type SalonUncheckedCreateWithoutWorkingHoursInput = {
@@ -729,6 +847,7 @@ export type SalonUncheckedCreateWithoutWorkingHoursInput = {
   services?: Prisma.ServiceUncheckedCreateNestedManyWithoutSalonInput
   daysOff?: Prisma.DayOffUncheckedCreateNestedManyWithoutSalonInput
   appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutSalonInput
+  memberships?: Prisma.SalonMembershipUncheckedCreateNestedManyWithoutSalonInput
 }
 
 export type SalonCreateOrConnectWithoutWorkingHoursInput = {
@@ -762,6 +881,7 @@ export type SalonUpdateWithoutWorkingHoursInput = {
   services?: Prisma.ServiceUpdateManyWithoutSalonNestedInput
   daysOff?: Prisma.DayOffUpdateManyWithoutSalonNestedInput
   appointments?: Prisma.AppointmentUpdateManyWithoutSalonNestedInput
+  memberships?: Prisma.SalonMembershipUpdateManyWithoutSalonNestedInput
 }
 
 export type SalonUncheckedUpdateWithoutWorkingHoursInput = {
@@ -779,6 +899,7 @@ export type SalonUncheckedUpdateWithoutWorkingHoursInput = {
   services?: Prisma.ServiceUncheckedUpdateManyWithoutSalonNestedInput
   daysOff?: Prisma.DayOffUncheckedUpdateManyWithoutSalonNestedInput
   appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutSalonNestedInput
+  memberships?: Prisma.SalonMembershipUncheckedUpdateManyWithoutSalonNestedInput
 }
 
 export type SalonCreateWithoutDaysOffInput = {
@@ -796,6 +917,7 @@ export type SalonCreateWithoutDaysOffInput = {
   services?: Prisma.ServiceCreateNestedManyWithoutSalonInput
   workingHours?: Prisma.WorkingHourCreateNestedManyWithoutSalonInput
   appointments?: Prisma.AppointmentCreateNestedManyWithoutSalonInput
+  memberships?: Prisma.SalonMembershipCreateNestedManyWithoutSalonInput
 }
 
 export type SalonUncheckedCreateWithoutDaysOffInput = {
@@ -813,6 +935,7 @@ export type SalonUncheckedCreateWithoutDaysOffInput = {
   services?: Prisma.ServiceUncheckedCreateNestedManyWithoutSalonInput
   workingHours?: Prisma.WorkingHourUncheckedCreateNestedManyWithoutSalonInput
   appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutSalonInput
+  memberships?: Prisma.SalonMembershipUncheckedCreateNestedManyWithoutSalonInput
 }
 
 export type SalonCreateOrConnectWithoutDaysOffInput = {
@@ -846,6 +969,7 @@ export type SalonUpdateWithoutDaysOffInput = {
   services?: Prisma.ServiceUpdateManyWithoutSalonNestedInput
   workingHours?: Prisma.WorkingHourUpdateManyWithoutSalonNestedInput
   appointments?: Prisma.AppointmentUpdateManyWithoutSalonNestedInput
+  memberships?: Prisma.SalonMembershipUpdateManyWithoutSalonNestedInput
 }
 
 export type SalonUncheckedUpdateWithoutDaysOffInput = {
@@ -863,6 +987,7 @@ export type SalonUncheckedUpdateWithoutDaysOffInput = {
   services?: Prisma.ServiceUncheckedUpdateManyWithoutSalonNestedInput
   workingHours?: Prisma.WorkingHourUncheckedUpdateManyWithoutSalonNestedInput
   appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutSalonNestedInput
+  memberships?: Prisma.SalonMembershipUncheckedUpdateManyWithoutSalonNestedInput
 }
 
 export type SalonCreateWithoutAppointmentsInput = {
@@ -880,6 +1005,7 @@ export type SalonCreateWithoutAppointmentsInput = {
   services?: Prisma.ServiceCreateNestedManyWithoutSalonInput
   workingHours?: Prisma.WorkingHourCreateNestedManyWithoutSalonInput
   daysOff?: Prisma.DayOffCreateNestedManyWithoutSalonInput
+  memberships?: Prisma.SalonMembershipCreateNestedManyWithoutSalonInput
 }
 
 export type SalonUncheckedCreateWithoutAppointmentsInput = {
@@ -897,6 +1023,7 @@ export type SalonUncheckedCreateWithoutAppointmentsInput = {
   services?: Prisma.ServiceUncheckedCreateNestedManyWithoutSalonInput
   workingHours?: Prisma.WorkingHourUncheckedCreateNestedManyWithoutSalonInput
   daysOff?: Prisma.DayOffUncheckedCreateNestedManyWithoutSalonInput
+  memberships?: Prisma.SalonMembershipUncheckedCreateNestedManyWithoutSalonInput
 }
 
 export type SalonCreateOrConnectWithoutAppointmentsInput = {
@@ -930,6 +1057,7 @@ export type SalonUpdateWithoutAppointmentsInput = {
   services?: Prisma.ServiceUpdateManyWithoutSalonNestedInput
   workingHours?: Prisma.WorkingHourUpdateManyWithoutSalonNestedInput
   daysOff?: Prisma.DayOffUpdateManyWithoutSalonNestedInput
+  memberships?: Prisma.SalonMembershipUpdateManyWithoutSalonNestedInput
 }
 
 export type SalonUncheckedUpdateWithoutAppointmentsInput = {
@@ -947,6 +1075,7 @@ export type SalonUncheckedUpdateWithoutAppointmentsInput = {
   services?: Prisma.ServiceUncheckedUpdateManyWithoutSalonNestedInput
   workingHours?: Prisma.WorkingHourUncheckedUpdateManyWithoutSalonNestedInput
   daysOff?: Prisma.DayOffUncheckedUpdateManyWithoutSalonNestedInput
+  memberships?: Prisma.SalonMembershipUncheckedUpdateManyWithoutSalonNestedInput
 }
 
 
@@ -960,6 +1089,7 @@ export type SalonCountOutputType = {
   workingHours: number
   daysOff: number
   appointments: number
+  memberships: number
 }
 
 export type SalonCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -968,6 +1098,7 @@ export type SalonCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.
   workingHours?: boolean | SalonCountOutputTypeCountWorkingHoursArgs
   daysOff?: boolean | SalonCountOutputTypeCountDaysOffArgs
   appointments?: boolean | SalonCountOutputTypeCountAppointmentsArgs
+  memberships?: boolean | SalonCountOutputTypeCountMembershipsArgs
 }
 
 /**
@@ -1015,6 +1146,13 @@ export type SalonCountOutputTypeCountAppointmentsArgs<ExtArgs extends runtime.Ty
   where?: Prisma.AppointmentWhereInput
 }
 
+/**
+ * SalonCountOutputType without action
+ */
+export type SalonCountOutputTypeCountMembershipsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SalonMembershipWhereInput
+}
+
 
 export type SalonSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1032,6 +1170,7 @@ export type SalonSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   workingHours?: boolean | Prisma.Salon$workingHoursArgs<ExtArgs>
   daysOff?: boolean | Prisma.Salon$daysOffArgs<ExtArgs>
   appointments?: boolean | Prisma.Salon$appointmentsArgs<ExtArgs>
+  memberships?: boolean | Prisma.Salon$membershipsArgs<ExtArgs>
   _count?: boolean | Prisma.SalonCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["salon"]>
 
@@ -1081,6 +1220,7 @@ export type SalonInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   workingHours?: boolean | Prisma.Salon$workingHoursArgs<ExtArgs>
   daysOff?: boolean | Prisma.Salon$daysOffArgs<ExtArgs>
   appointments?: boolean | Prisma.Salon$appointmentsArgs<ExtArgs>
+  memberships?: boolean | Prisma.Salon$membershipsArgs<ExtArgs>
   _count?: boolean | Prisma.SalonCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type SalonIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1094,6 +1234,7 @@ export type $SalonPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     workingHours: Prisma.$WorkingHourPayload<ExtArgs>[]
     daysOff: Prisma.$DayOffPayload<ExtArgs>[]
     appointments: Prisma.$AppointmentPayload<ExtArgs>[]
+    memberships: Prisma.$SalonMembershipPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1505,6 +1646,7 @@ export interface Prisma__SalonClient<T, Null = never, ExtArgs extends runtime.Ty
   workingHours<T extends Prisma.Salon$workingHoursArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Salon$workingHoursArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WorkingHourPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   daysOff<T extends Prisma.Salon$daysOffArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Salon$daysOffArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DayOffPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   appointments<T extends Prisma.Salon$appointmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Salon$appointmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AppointmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  memberships<T extends Prisma.Salon$membershipsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Salon$membershipsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SalonMembershipPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2054,6 +2196,30 @@ export type Salon$appointmentsArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   distinct?: Prisma.AppointmentScalarFieldEnum | Prisma.AppointmentScalarFieldEnum[]
+}
+
+/**
+ * Salon.memberships
+ */
+export type Salon$membershipsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SalonMembership
+   */
+  select?: Prisma.SalonMembershipSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SalonMembership
+   */
+  omit?: Prisma.SalonMembershipOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SalonMembershipInclude<ExtArgs> | null
+  where?: Prisma.SalonMembershipWhereInput
+  orderBy?: Prisma.SalonMembershipOrderByWithRelationInput | Prisma.SalonMembershipOrderByWithRelationInput[]
+  cursor?: Prisma.SalonMembershipWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SalonMembershipScalarFieldEnum | Prisma.SalonMembershipScalarFieldEnum[]
 }
 
 /**
