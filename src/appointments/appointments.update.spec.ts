@@ -160,6 +160,51 @@ describe('AppointmentsService.update', () => {
     expect(prisma.service.findUnique).not.toHaveBeenCalled();
   });
 
+  it('allows a note edit on a past appointment when submitted scheduling fields are unchanged', async () => {
+    const pastAppointment = {
+      ...appointment,
+      startAt: new Date('2000-01-01T10:00:00.000Z'),
+      endAt: new Date('2000-01-01T10:30:00.000Z'),
+    };
+    prisma.appointment.findUnique
+      .mockReset()
+      .mockResolvedValueOnce(pastAppointment)
+      .mockResolvedValue({ ...pastAppointment, note: 'updated note' });
+
+    await expect(service.update(
+      'appointment-1', {
+        note: 'updated note',
+        startAt: '2000-01-01T10:00:00.000Z',
+        barberId: 'barber-1',
+        serviceId: 'service-1',
+      }, 'admin-1', UserRole.ADMIN,
+    )).resolves.toMatchObject({ note: 'updated note' });
+
+    expect(prisma.appointment.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: { note: 'updated note' },
+    }));
+    expect(availabilityService.validateBookingSlot).not.toHaveBeenCalled();
+    expect(prisma.barber.findUnique).not.toHaveBeenCalled();
+    expect(prisma.service.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('rejects an actual scheduling change on a past appointment', async () => {
+    const pastAppointment = {
+      ...appointment,
+      startAt: new Date('2000-01-01T10:00:00.000Z'),
+      endAt: new Date('2000-01-01T10:30:00.000Z'),
+    };
+    prisma.appointment.findUnique.mockReset().mockResolvedValueOnce(pastAppointment);
+
+    await expect(service.update(
+      'appointment-1', { note: 'updated note', barberId: 'barber-2' },
+      'admin-1', UserRole.ADMIN,
+    )).rejects.toThrow('Appointment cannot be scheduled in the past');
+
+    expect(prisma.appointment.updateMany).not.toHaveBeenCalled();
+    expect(availabilityService.validateBookingSlot).not.toHaveBeenCalled();
+  });
+
   it('rejects a stale edit if another request updates the appointment first', async () => {
     prisma.appointment.updateMany.mockResolvedValueOnce({ count: 0 });
 

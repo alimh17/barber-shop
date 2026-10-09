@@ -436,13 +436,17 @@ export class AppointmentsService {
       throw new BadRequestException('Invalid startAt');
     }
 
+    // Detect actual scheduling changes, not merely fields present in the DTO.
+    // Clients may submit the full form even when only the note was edited.
     const isScheduleChanged =
-      dto.startAt !== undefined ||
-      dto.barberId !== undefined ||
-      dto.serviceId !== undefined;
+      (dto.startAt !== undefined &&
+        startAt.getTime() !== appointment.startAt.getTime()) ||
+      (dto.barberId !== undefined && dto.barberId !== appointment.barberId) ||
+      (dto.serviceId !== undefined && dto.serviceId !== appointment.serviceId);
 
-    // Allow note-only edits on older appointments, but never reschedule one
-    // into the past or alter its scheduling details after its start time.
+    // Allow edits that do not actually change scheduling details on older
+    // appointments, but never reschedule one into the past or alter its
+    // scheduling details after its start time.
     if (isScheduleChanged && startAt <= new Date()) {
       throw new BadRequestException('Appointment cannot be scheduled in the past');
     }
