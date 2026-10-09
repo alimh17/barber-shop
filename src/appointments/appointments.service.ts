@@ -447,6 +447,39 @@ export class AppointmentsService {
       throw new BadRequestException('Appointment cannot be scheduled in the past');
     }
 
+    // A note-only edit must not revalidate a historical time slot against
+    // today's availability rules (working hours, days off, or active records).
+    if (!isScheduleChanged) {
+      const result = await this.prisma.appointment.updateMany({
+        where: {
+          id,
+          updatedAt: appointment.updatedAt,
+          status: appointment.status,
+        },
+        data: { ...(dto.note !== undefined ? { note: dto.note } : {}) },
+      });
+
+      if (result.count === 0) {
+        throw new ConflictException(
+          'Appointment changed concurrently; refresh and try again',
+        );
+      }
+
+      return await this.prisma.appointment.findUnique({
+        where: { id },
+        include: {
+          customer: { include: { user: { select: {
+            id: true, phone: true, firstName: true, lastName: true, role: true,
+          } } } },
+          barber: { include: { user: { select: {
+            id: true, phone: true, firstName: true, lastName: true, role: true,
+          } } } },
+          service: true,
+          salon: true,
+        },
+      });
+    }
+
     const [barber, service] = await Promise.all([
       this.prisma.barber.findUnique({ where: { id: barberId } }),
       this.prisma.service.findUnique({ where: { id: serviceId } }),

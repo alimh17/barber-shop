@@ -144,6 +144,9 @@ describe('AppointmentsService.update', () => {
       .mockReset()
       .mockResolvedValueOnce(pastAppointment)
       .mockResolvedValue({ ...pastAppointment, note: 'updated note' });
+    availabilityService.validateBookingSlot.mockRejectedValueOnce(
+      new ConflictException('Historical slot is no longer available'),
+    );
 
     await expect(service.update(
       'appointment-1', { note: 'updated note' }, 'admin-1', UserRole.ADMIN,
@@ -152,6 +155,9 @@ describe('AppointmentsService.update', () => {
     expect(prisma.appointment.updateMany).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ note: 'updated note' }),
     }));
+    expect(availabilityService.validateBookingSlot).not.toHaveBeenCalled();
+    expect(prisma.barber.findUnique).not.toHaveBeenCalled();
+    expect(prisma.service.findUnique).not.toHaveBeenCalled();
   });
 
   it('rejects a stale edit if another request updates the appointment first', async () => {
