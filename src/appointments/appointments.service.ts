@@ -7,7 +7,9 @@ import {
 
 import {
   AppointmentStatus,
+  UserRole
 } from '../generated/prisma/client.js';
+import { SalonAccessService } from '../salons/salon-access.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AvailabilityService } from '../availability/availability.service.js';
 import { CreateAppointmentDto } from './dto/create-appointment.dto.js';
@@ -16,9 +18,10 @@ import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto.
 @Injectable()
 export class AppointmentsService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly availabilityService: AvailabilityService,
-  ) { }
+  private readonly prisma: PrismaService,
+  private readonly availabilityService: AvailabilityService,
+  private readonly salonAccessService: SalonAccessService,
+) {}
 
  
 private isAppointmentOverlapConstraintError(
@@ -340,46 +343,64 @@ private isAppointmentOverlapConstraintError(
     return appointment;
   }
 
-  async findAll() {
-    return this.prisma.appointment.findMany({
-      orderBy: {
-        startAt: 'asc',
+ async findAll(userId: string, role: UserRole) {
+  let where = {};
+
+  if (role !== UserRole.SUPER_ADMIN) {
+    const memberships = await this.prisma.salonMembership.findMany({
+      where: {
+        userId,
+        isActive: true,
       },
-
-      include: {
-        customer: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                phone: true,
-                firstName: true,
-                lastName: true,
-                role: true,
-              },
-            },
-          },
-        },
-
-        barber: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                phone: true,
-                firstName: true,
-                lastName: true,
-                role: true,
-              },
-            },
-          },
-        },
-
-        service: true,
-        salon: true,
+      select: {
+        salonId: true,
       },
     });
+
+    where = {
+      salonId: {
+        in: memberships.map((membership) => membership.salonId),
+      },
+    };
   }
+
+  return this.prisma.appointment.findMany({
+    where,
+    orderBy: {
+      startAt: 'asc',
+    },
+    include: {
+      customer: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              phone: true,
+              firstName: true,
+              lastName: true,
+              role: true,
+            },
+          },
+        },
+      },
+      barber: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              phone: true,
+              firstName: true,
+              lastName: true,
+              role: true,
+            },
+          },
+        },
+      },
+      service: true,
+      salon: true,
+    },
+  });
+}
 
   async updateStatus(
     id: string,
