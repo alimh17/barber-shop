@@ -20,8 +20,6 @@ import { ServicesController } from './services/services.controller.js';
 import { ServicesService } from './services/services.service.js';
 import { ServicesModule } from './services/services.module.js';
 import { BarberServicesModule } from './barber-services/barber-services.module.js';
-import { WorkingHoursController } from './schedules/working-hours.controller.js';
-import { WorkingHoursService } from './schedules/working-hours.service.js';
 import { SchedulesModule } from './schedules/schedules.module.js';
 import { AppointmentsController } from './appointments/appointments.controller.js';
 import { AppointmentsModule } from './appointments/appointments.module.js';
@@ -52,9 +50,16 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     BarberServicesModule,
     SchedulesModule,
     AppointmentsModule,
-    AvailabilityModule
+    AvailabilityModule,
   ],
-  controllers: [AppController, UsersController, SalonsController, BarbersController, ServicesController, WorkingHoursController, AppointmentsController],
-  providers: [AppService, SalonsService, BarbersService, ServicesService, WorkingHoursService],
+  controllers: [
+    AppController,
+    UsersController,
+    SalonsController,
+    BarbersController,
+    ServicesController,
+    AppointmentsController,
+  ],
+  providers: [AppService, SalonsService, BarbersService, ServicesService],
 })
 export class AppModule {}

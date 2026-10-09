@@ -4,11 +4,10 @@ import { JwtModule } from '@nestjs/jwt';
 
 import { OtpModule } from '../otp/otp.module.js';
 import { UsersModule } from '../users/users.module.js';
-
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
-
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
+import { OtpRateLimitGuard } from './guards/otp-rate-limit.guard.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
 import { RolesGuard } from './guards/roles.guard.js';
 import { JwtExpiresIn } from './types/type.js';
@@ -18,17 +17,11 @@ import { JwtExpiresIn } from './types/type.js';
     ConfigModule,
     UsersModule,
     OtpModule,
-
     JwtModule.registerAsync({
       imports: [ConfigModule],
-
       inject: [ConfigService],
-
       useFactory: (config: ConfigService) => ({
-        secret: config.getOrThrow<string>(
-          'JWT_ACCESS_SECRET',
-        ),
-
+        secret: config.getOrThrow<string>('JWT_ACCESS_SECRET'),
         signOptions: {
           expiresIn: config.getOrThrow<string>(
             'JWT_ACCESS_EXPIRES_IN',
@@ -37,20 +30,14 @@ import { JwtExpiresIn } from './types/type.js';
       }),
     }),
   ],
-
   controllers: [AuthController],
-
   providers: [
     AuthService,
     JwtStrategy,
     JwtAuthGuard,
     RolesGuard,
+    OtpRateLimitGuard,
   ],
-
-  exports: [
-    AuthService,
-    JwtAuthGuard,
-    RolesGuard,
-  ],
+  exports: [AuthService, JwtAuthGuard, RolesGuard],
 })
-export class AuthModule { }
+export class AuthModule {}
