@@ -7,6 +7,11 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
+  const trustProxyHops = Number.parseInt(process.env.TRUST_PROXY_HOPS ?? '0', 10);
+  if (Number.isInteger(trustProxyHops) && trustProxyHops > 0) {
+    app.getHttpAdapter().getInstance().set('trust proxy', trustProxyHops);
+  }
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

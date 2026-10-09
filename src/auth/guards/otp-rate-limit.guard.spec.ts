@@ -1,4 +1,4 @@
-import { HttpException } from '@nestjs/common';
+import { HttpException, HttpStatus } from '@nestjs/common';
 import type { ExecutionContext } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
 import { OtpRateLimitGuard } from './otp-rate-limit.guard.js';
@@ -17,24 +17,15 @@ function context(phone: string, ip = '192.0.2.1', path = '/api/auth/request-otp'
 
 function setup() {
   const counts = new Map<string, number>();
-  const tx = {
-    $executeRaw: vi.fn(async () => 0),
-    $queryRaw: vi.fn(async (_strings: TemplateStringsArray, key: string) => {
-      const count = (counts.get(key) ?? 0) + 1;
-      counts.set(key, count);
-      return [{ count }];
-    }),
-  };
-  const prisma = {
-    $transaction: vi.fn(async (callback: (transaction: typeof tx) => unknown) =>
-      callback(tx),
-    ),
-  };
+  const incrementWithExpiry = vi.fn(async (key: string) => {
+    const count = (counts.get(key) ?? 0) + 1;
+    counts.set(key, count);
+    return count;
+  });
   return {
-    guard: new OtpRateLimitGuard(prisma as never),
-    tx,
-    prisma,
+    guard: new OtpRateLimitGuard({ incrementWithExpiry } as never),
     counts,
+    incrementWithExpiry,
   };
 }
 
@@ -58,17 +49,26 @@ describe('OtpRateLimitGuard', () => {
     const before = counts.size;
     await expect(
       guard.canActivate(context('09123456789', '192.0.2.1')),
-    ).rejects.toThrow(HttpException);
+    ).rejects.toMatchObject({ status: HttpStatus.TOO_MANY_REQUESTS });
     expect(counts.size).toBe(before);
   });
 
-  it('shares counters through the database transaction and blocks after five phone requests', async () => {
+  it('blocks after five requests for one phone across different IPs', async () => {
     const { guard } = setup();
     for (let i = 0; i < 5; i += 1) {
       await guard.canActivate(context('09123456789', `192.0.2.${i + 1}`));
     }
     await expect(
       guard.canActivate(context('09123456789', '192.0.2.99')),
-    ).rejects.toThrow(HttpException);
+    ).rejects.toBeInstanceOf(HttpException);
+  });
+
+  it('fails closed if Redis is unavailable', async () => {
+    const guard = new OtpRateLimitGuard({
+      incrementWithExpiry: vi.fn().mockRejectedValue(new Error('offline')),
+    } as never);
+    await expect(guard.canActivate(context('09123456789'))).rejects.toMatchObject({
+      status: HttpStatus.SERVICE_UNAVAILABLE,
+    });
   });
 });

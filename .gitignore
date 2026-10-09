@@ -59,3 +59,7 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /generated/prisma
+
+# Generated TLS certificates and ACME challenge files
+/deploy/certbot/conf/
+/deploy/certbot/www/

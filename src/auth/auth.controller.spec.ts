@@ -12,6 +12,7 @@ import { OtpRateLimitGuard } from './guards/otp-rate-limit.guard.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
 import { UsersService } from '../users/users.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { RedisService } from '../redis/redis.service.js';
 import {
     UserRole,
     UserStatus,
@@ -48,6 +49,7 @@ describe('AuthController (HTTP)', () => {
             providers: [
                 JwtAuthGuard,
                 { provide: PrismaService, useValue: {} },
+                { provide: RedisService, useValue: { incrementWithExpiry: vi.fn() } },
                 { provide: OtpRateLimitGuard, useValue: { canActivate: () => true } },
                 JwtStrategy,
                 {

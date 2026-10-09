@@ -24,6 +24,7 @@ import { SchedulesModule } from './schedules/schedules.module.js';
 import { AppointmentsController } from './appointments/appointments.controller.js';
 import { AppointmentsModule } from './appointments/appointments.module.js';
 import { AvailabilityModule } from './availability/availability.module.js';
+import { RedisModule } from './redis/redis.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -40,6 +41,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       isGlobal: true,
     }),
     PrismaModule,
+    RedisModule,
     HealthModule,
     UsersModule,
     OtpModule,
