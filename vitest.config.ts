@@ -9,5 +9,14 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['**/*.spec.ts'],
+    // Override DATABASE_URL and REDIS_URL so integration tests can connect to
+    // the Docker-exposed ports on localhost (127.0.0.1:5432 / :6379) instead
+    // of the Docker-internal service hostname "postgres" which is unreachable
+    // from the host machine. These override whatever dotenv/config loads from .env.
+    env: {
+      DATABASE_URL: 'postgresql://barbershop:barbershop123@localhost:5432/barbershop?schema=public',
+      REDIS_URL: 'redis://:redis123@localhost:6379/0',
+      DOTENV_CONFIG_PATH: '.env.test',
+    },
   },
 });
