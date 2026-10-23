@@ -27,10 +27,7 @@ export class AuthService {
       expiresAt: result.expiresAt,
     };
 
-    if (
-      this.configService.get<string>('NODE_ENV') === 'development' &&
-      this.configService.get<string>('OTP_EXPOSE_CODE') === 'true'
-    ) {
+    if (this.configService.get<string>('NODE_ENV') === 'development') {
       response.otp = result.code;
     }
 

@@ -6,7 +6,6 @@ import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { HealthModule } from './health/health.module.js';
-import { UsersController } from './users/users.controller.js';
 import { UsersModule } from './users/users.module.js';
 import { OtpModule } from './otp/otp.module.js';
 import { AuthModule } from './auth/auth.module.js';
@@ -56,7 +55,6 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
   ],
   controllers: [
     AppController,
-    UsersController,
     SalonsController,
     BarbersController,
     ServicesController,

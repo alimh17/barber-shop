@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { DayOfWeek, UserRole } from '../generated/prisma/client.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
@@ -21,12 +22,15 @@ type AuthenticatedRequest = Request & {
   user: { id: string; role: UserRole };
 };
 
+@ApiTags('Working Hours')
+@ApiBearerAuth()
 @Controller('barbers')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class WorkingHoursController {
   constructor(private readonly workingHoursService: WorkingHoursService) {}
 
   @Get(':barberId/working-hours')
+  @ApiOperation({ summary: 'List barber working hours', description: 'Returns the weekly schedule for an accessible barber.' })
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   findByBarber(
     @Param('barberId') barberId: string,
@@ -40,6 +44,7 @@ export class WorkingHoursController {
   }
 
   @Put(':barberId/working-hours/:dayOfWeek')
+  @ApiOperation({ summary: 'Set working hours', description: 'Creates or replaces working hours for one weekday, validating time order and salon access.' })
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   upsert(
     @Param('barberId') barberId: string,
@@ -57,6 +62,7 @@ export class WorkingHoursController {
   }
 
   @Delete(':barberId/working-hours/:dayOfWeek')
+  @ApiOperation({ summary: 'Remove working hours', description: 'Deletes the barber schedule entry for one weekday.' })
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   remove(
     @Param('barberId') barberId: string,

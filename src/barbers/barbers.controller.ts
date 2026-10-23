@@ -10,6 +10,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { UserRole } from '../generated/prisma/client.js';
 
@@ -23,6 +24,8 @@ import { CreateBarberDto } from './dto/create-barber.dto.js';
 import { UpdateBarberDto } from './dto/update-barber.dto.js';
 import { BarbersService } from './barbers.service.js';
 
+@ApiTags('Barbers')
+@ApiBearerAuth()
 @Controller('barbers')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class BarbersController {
@@ -31,9 +34,11 @@ export class BarbersController {
   ) {}
 
   @Get()
+  @ApiOperation({ summary: 'List barbers', description: 'Lists active barbers in salons visible to the caller, optionally filtered by salon.' })
   @Roles(
     UserRole.ADMIN,
     UserRole.SUPER_ADMIN,
+    UserRole.CUSTOMER,
   )
   findAll(
     @CurrentUser() user: CurrentUserData,
@@ -47,6 +52,7 @@ export class BarbersController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get barber details', description: 'Returns a barber profile after tenant access validation.' })
   @Roles(
     UserRole.ADMIN,
     UserRole.SUPER_ADMIN,
@@ -63,6 +69,7 @@ export class BarbersController {
   }
 
   @Post()
+  @ApiOperation({ summary: 'Create a barber', description: 'Creates or promotes a user as a barber and assigns them to an accessible salon.' })
   @Roles(
     UserRole.ADMIN,
     UserRole.SUPER_ADMIN,
@@ -79,6 +86,7 @@ export class BarbersController {
   }
 
   @Patch(':id')
+  @ApiOperation({ summary: 'Update a barber', description: 'Updates barber profile data in a salon managed by the caller.' })
   @Roles(
     UserRole.ADMIN,
     UserRole.SUPER_ADMIN,
@@ -97,6 +105,7 @@ export class BarbersController {
   }
 
   @Delete(':id')
+  @ApiOperation({ summary: 'Deactivate a barber', description: 'Soft-deactivates a barber while retaining historical records.' })
   @Roles(
     UserRole.ADMIN,
     UserRole.SUPER_ADMIN,

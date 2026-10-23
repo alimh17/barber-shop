@@ -31,6 +31,16 @@
 $ pnpm install
 ```
 
+This repository is a pnpm workspace containing the NestJS API at the repository root and the React client in `apps/web`.
+
+```bash
+# run API and React client together
+$ pnpm dev:all
+
+# build both applications
+$ pnpm build:all
+```
+
 ## Compile and run the project
 
 ```bash

@@ -107,7 +107,7 @@ export class BarbersService {
       );
     }
 
-    if (salonId) {
+    if (salonId && role !== UserRole.CUSTOMER) {
       await this.salonAccessService.assertCanAccessSalon(
         userId,
         role,
@@ -116,7 +116,14 @@ export class BarbersService {
     }
 
     return this.prisma.barber.findMany({
-      where: salonId ? { salonId } : {},
+      where: salonId
+        ? {
+            salonId,
+            ...(role === UserRole.CUSTOMER
+              ? { isActive: true, salon: { isActive: true } }
+              : {}),
+          }
+        : {},
       include: {
         user: {
           select: {

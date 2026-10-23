@@ -2,6 +2,7 @@ FROM node:22-alpine AS base
 WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/web/package.json ./apps/web/package.json
 
 FROM base AS build
 # Prisma 7 loads its config during client generation; this placeholder is build-only.
@@ -12,6 +13,13 @@ RUN pnpm prisma generate && pnpm build
 
 FROM base AS production-deps
 RUN pnpm install --prod --frozen-lockfile
+
+FROM build AS web-build
+RUN pnpm build:web
+
+FROM nginx:1.28-alpine AS web
+COPY deploy/nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY --from=web-build /app/apps/web/dist /usr/share/nginx/html
 
 FROM node:22-alpine AS production
 ENV NODE_ENV=production

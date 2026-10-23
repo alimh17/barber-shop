@@ -254,6 +254,31 @@ describe('BarbersService', () => {
                 salonAccessService.assertCanAccessSalon,
             ).not.toHaveBeenCalled();
         });
+
+        it('allows customers to list only active barbers in an active salon', async () => {
+            prisma.barber.findMany.mockResolvedValue([mockBarber]);
+
+            await expect(
+                service.findAll(
+                    'customer-1',
+                    UserRole.CUSTOMER,
+                    'salon-1',
+                ),
+            ).resolves.toEqual([mockBarber]);
+
+            expect(prisma.barber.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: {
+                        salonId: 'salon-1',
+                        isActive: true,
+                        salon: { isActive: true },
+                    },
+                }),
+            );
+            expect(
+                salonAccessService.assertCanAccessSalon,
+            ).not.toHaveBeenCalled();
+        });
     });
 
     describe('findById', () => {

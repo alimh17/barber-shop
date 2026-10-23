@@ -9,6 +9,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { UserRole } from '../generated/prisma/client.js';
 
@@ -23,6 +24,7 @@ import { UpdateSalonDto } from './dto/update-salon.dto.js';
 import { CreateSalonMembershipDto } from './dto/create-salon-membership.dto.js';
 import { SalonsService } from './salons.service.js';
 
+@ApiTags('Salons')
 @Controller('salons')
 export class SalonsController {
   constructor(
@@ -31,12 +33,14 @@ export class SalonsController {
 
   // Public: list active salons.
   @Get()
+  @ApiOperation({ summary: 'List active salons', description: 'Public directory of active salons ordered by creation time.' })
   findAll() {
     return this.salonsService.findAll();
   }
 
   // Public: get salon details.
   @Get(':id')
+  @ApiOperation({ summary: 'Get salon details', description: 'Returns one active salon by its identifier.' })
   findById(
     @Param('id') id: string,
   ) {
@@ -45,6 +49,8 @@ export class SalonsController {
 
   // Only SUPER_ADMIN can create a salon.
   @Post()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a salon', description: 'Creates a salon with a unique slug. Restricted to super administrators.' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPER_ADMIN)
   create(
@@ -55,6 +61,8 @@ export class SalonsController {
 
   // SUPER_ADMIN can assign an ADMIN to a salon.
   @Post(':id/memberships')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Assign a salon administrator', description: 'Creates or reactivates an administrator membership for the selected salon.' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPER_ADMIN)
   createMembership(
@@ -69,6 +77,8 @@ export class SalonsController {
 
   // SUPER_ADMIN can revoke an ADMIN's access to a salon.
   @Delete(':id/memberships/:userId')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Revoke salon administration', description: 'Deactivates a user membership without deleting its history.' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPER_ADMIN)
   deactivateMembership(
@@ -83,6 +93,8 @@ export class SalonsController {
 
   // ADMIN can update only salons where they have active membership.
   @Patch(':id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update a salon', description: 'Updates salon profile fields after active-membership access validation.' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(
     UserRole.ADMIN,
@@ -103,6 +115,8 @@ export class SalonsController {
 
   // ADMIN can deactivate only salons where they have active membership.
   @Delete(':id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Deactivate a salon', description: 'Soft-deactivates a salon after validating administrative access.' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(
     UserRole.ADMIN,

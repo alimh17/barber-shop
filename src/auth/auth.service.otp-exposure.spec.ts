@@ -48,9 +48,8 @@ describe('AuthService OTP exposure', () => {
     ).not.toHaveProperty('otp');
   });
 
-  it('exposes the OTP only when explicitly enabled in development', async () => {
+  it('exposes the OTP in development without requiring an SMS provider', async () => {
     configValues.NODE_ENV = 'development';
-    configValues.OTP_EXPOSE_CODE = 'true';
     await expect(
       service.requestOtp({ phone: '09120000000' }),
     ).resolves.toMatchObject({
