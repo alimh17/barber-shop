@@ -85,7 +85,16 @@ export class ServicesService {
           include: {
             barber: {
               include: {
-                user: true,
+                user: {
+                  select: {
+                    id: true,
+                    phone: true,
+                    firstName: true,
+                    lastName: true,
+                    role: true,
+                    status: true,
+                  },
+                },
               },
             },
           },

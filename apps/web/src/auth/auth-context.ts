@@ -6,7 +6,7 @@ export interface AuthValue {
   session: Session | null
   ready: boolean
   sendOtp: typeof requestOtp
-  signIn: (phone: string, code: string) => Promise<void>
+  signIn: (phone: string, code: string, salonSlug?: string) => Promise<void>
   signOut: () => Promise<void>
 }
 

@@ -67,6 +67,9 @@ export class AppointmentsService {
       throw new NotFoundException('Customer not found');
     }
 
+    const barber = await this.prisma.barber.findUnique({ where: { id: dto.barberId }, select: { salonId: true } });
+    if (!barber) throw new NotFoundException('Barber not found');
+    await this.salonAccessService.assertCanAccessSalon(userId, UserRole.CUSTOMER, barber.salonId);
     return this.createForCustomer(customer.id, dto);
   }
 
@@ -101,6 +104,9 @@ export class AppointmentsService {
 
     if (!customer) {
       throw new NotFoundException('Customer not found');
+    }
+    if (role !== UserRole.SUPER_ADMIN) {
+      await this.salonAccessService.assertCanAccessSalon(customer.userId, UserRole.CUSTOMER, barber.salonId);
     }
 
     return this.createForCustomer(customer.id, dto, {
@@ -336,9 +342,19 @@ export class AppointmentsService {
    * ADMIN فقط سالن‌های دارای عضویت فعال را می‌بیند.
    * SUPER_ADMIN تمام سالن‌ها را می‌بیند.
    */
+  async findMine(userId: string) {
+    return this.prisma.appointment.findMany({
+      where: { customer: { userId }, salon: { memberships: { some: { userId, isActive: true } } } },
+      include: { barber: { include: { user: { select: { firstName: true, lastName: true, phone: true } } } }, service: true, salon: true },
+      orderBy: { startAt: 'desc' },
+    });
+  }
+
   async findAll(userId: string, role: UserRole) {
     const where =
-      role === UserRole.SUPER_ADMIN
+      role === UserRole.BARBER
+        ? { barber: { userId } }
+        : role === UserRole.SUPER_ADMIN
         ? {}
         : {
             salonId: {
@@ -616,11 +632,18 @@ export class AppointmentsService {
       throw new NotFoundException('Appointment not found');
     }
 
-    await this.salonAccessService.assertCanAccessSalon(
-      userId,
-      role,
-      appointment.salonId,
-    );
+    if (role === UserRole.BARBER) {
+      const ownBarber = await this.prisma.barber.findFirst({
+        where: { id: appointment.barberId, userId, isActive: true },
+        select: { id: true },
+      });
+      if (!ownBarber) throw new NotFoundException('Appointment not found');
+      if (dto.status !== AppointmentStatus.CONFIRMED && dto.status !== AppointmentStatus.CANCELLED) {
+        throw new BadRequestException('Barber may only confirm or reject pending appointments');
+      }
+    } else {
+      await this.salonAccessService.assertCanAccessSalon(userId, role, appointment.salonId);
+    }
 
     const allowedTransitions: Record<AppointmentStatus, AppointmentStatus[]> = {
       [AppointmentStatus.PENDING]: [

@@ -27,7 +27,7 @@ export class BarberServicesController {
 
   @Get(':barberId/services')
   @ApiOperation({ summary: 'List a barber services', description: 'Returns active services assigned to a barber after salon access validation.' })
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.CUSTOMER, UserRole.BARBER)
   findByBarber(
     @Param('barberId') barberId: string,
     @CurrentUser() user: CurrentUserData,

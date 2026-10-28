@@ -31,20 +31,25 @@ export class SalonsController {
     private readonly salonsService: SalonsService,
   ) {}
 
-  // Public: list active salons.
   @Get()
-  @ApiOperation({ summary: 'List active salons', description: 'Public directory of active salons ordered by creation time.' })
-  findAll() {
-    return this.salonsService.findAll();
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  findAll(@CurrentUser() user: CurrentUserData) {
+    return this.salonsService.findAll(user.id, user.role);
   }
 
-  // Public: get salon details.
+  // Public lookup for a salon invitation link, not a directory.
+  @Get('by-slug/:slug')
+  findBySlug(@Param('slug') slug: string) {
+    return this.salonsService.findBySlug(slug);
+  }
+
+  // Authenticated salon details.
   @Get(':id')
-  @ApiOperation({ summary: 'Get salon details', description: 'Returns one active salon by its identifier.' })
-  findById(
-    @Param('id') id: string,
-  ) {
-    return this.salonsService.findById(id);
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  findById(@Param('id') id: string, @CurrentUser() user: CurrentUserData) {
+    return this.salonsService.findVisibleById(id, user.id, user.role);
   }
 
   // Only SUPER_ADMIN can create a salon.

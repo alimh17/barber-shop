@@ -154,11 +154,8 @@ export class BarberServicesService {
       throw new NotFoundException('Barber not found');
     }
 
-    await this.salonAccessService.assertCanAccessSalon(
-      userId,
-      role,
-      barber.salonId,
-    );
+    await this.salonAccessService.assertCanAccessSalon(userId, role, barber.salonId);
+    if (!barber.isActive) throw new NotFoundException('Barber not found');
 
     return this.prisma.barberService.findMany({
       where: {

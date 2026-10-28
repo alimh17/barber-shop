@@ -49,15 +49,31 @@ export class SalonsService {
     });
   }
 
-  async findAll() {
+  async findAll(userId: string, role: UserRole) {
+    const scope = role === UserRole.SUPER_ADMIN ? {} : role === UserRole.BARBER
+      ? { barbers: { some: { userId, isActive: true } } }
+      : { memberships: { some: { userId, isActive: true } } };
     return this.prisma.salon.findMany({
-      where: {
-        isActive: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      where: { isActive: true, ...scope },
+      orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async findBySlug(slug: string) {
+    const salon = await this.prisma.salon.findFirst({
+      where: { slug, isActive: true },
+      select: { id: true, name: true, slug: true, timezone: true },
+    });
+    if (!salon) throw new NotFoundException('Salon not found');
+    return salon;
+  }
+
+  async findVisibleById(id: string, userId: string, role: UserRole) {
+    if (role !== UserRole.SUPER_ADMIN) {
+      const salons = await this.findAll(userId, role);
+      if (!salons.some((salon) => salon.id === id)) throw new NotFoundException('Salon not found');
+    }
+    return this.findById(id);
   }
 
   async findById(id: string) {
@@ -166,6 +182,11 @@ export class SalonsService {
         'Inactive or blocked users cannot be assigned to a salon',
       );
     }
+
+    const existingOther = await this.prisma.salonMembership.findFirst({
+      where: { userId: dto.userId, isActive: true, salonId: { not: salonId } },
+    });
+    if (existingOther) throw new ConflictException('Admin already belongs to another salon');
 
     const existingMembership =
       await this.prisma.salonMembership.findUnique({

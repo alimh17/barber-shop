@@ -2,7 +2,7 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { clearSession, readSession, writeSession } from './session'
 import type { AuthResponse, Session } from './types'
 
-const api = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? '/api', timeout: 12_000 })
+const api = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? '/api', timeout: 12_000, withCredentials: true })
 let refreshPromise: Promise<Session> | null = null
 
 function tokenExpiresAt(token: string) {
@@ -46,15 +46,13 @@ export async function requestOtp(phone: string) {
   return { expiresIn, developmentOtp: data.otp }
 }
 
-export async function verifyOtp(phone: string, code: string) {
-  const { data } = await api.post<AuthResponse>('/auth/verify-otp', { phone, code })
+export async function verifyOtp(phone: string, code: string, salonSlug?: string) {
+  const { data } = await api.post<AuthResponse>('/auth/verify-otp', { phone, code, salonSlug })
   return toSession(data)
 }
 
 export async function refreshSession() {
-  const current = readSession()
-  if (!current?.refreshToken) throw new Error('NO_REFRESH_TOKEN')
-  const { data } = await axios.post<AuthResponse>(`${api.defaults.baseURL}/auth/refresh`, { refreshToken: current.refreshToken })
+  const { data } = await axios.post<AuthResponse>(`${api.defaults.baseURL}/auth/refresh`, {}, { withCredentials: true })
   const next = toSession(data)
   writeSession(next)
   return next

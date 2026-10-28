@@ -94,20 +94,39 @@ export function personName(person?: PersonRef | null) {
   return [person.firstName, person.lastName].filter(Boolean).join(' ') || person.phone
 }
 
-const tehranDayFormatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tehran', year: 'numeric', month: '2-digit', day: '2-digit' })
-const tehranTimeFormatter = new Intl.DateTimeFormat('fa-IR', { timeZone: 'Asia/Tehran', hour: '2-digit', minute: '2-digit' })
+const DEFAULT_TIMEZONE = 'Asia/Tehran'
+const salonTimezones = new Map<string, string>()
+let activeTimezone = DEFAULT_TIMEZONE
+
+export function setActiveSalonTimezone(timezone: string) {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: timezone })
+    activeTimezone = timezone
+  } catch {
+    activeTimezone = DEFAULT_TIMEZONE
+  }
+}
+
+export async function loadSalonTimezone(salonId: string) {
+  if (!salonId) return DEFAULT_TIMEZONE
+  if (!salonTimezones.has(salonId)) {
+    const { data } = await api.get<{ timezone: string }>(`/salons/${salonId}`)
+    salonTimezones.set(salonId, data.timezone || DEFAULT_TIMEZONE)
+  }
+  return salonTimezones.get(salonId) ?? DEFAULT_TIMEZONE
+}
 
 /** YYYY-MM-DD in the salon timezone. */
 export function tehranDate(value: string | Date = new Date()) {
-  return tehranDayFormatter.format(new Date(value))
+  return new Intl.DateTimeFormat('en-CA', { timeZone: activeTimezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value))
 }
 
 export function tehranTime(value: string) {
-  return tehranTimeFormatter.format(new Date(value))
+  return new Intl.DateTimeFormat('fa-IR', { timeZone: activeTimezone, hour: '2-digit', minute: '2-digit' }).format(new Date(value))
 }
 
 export function tehranLongDate(value: Date = new Date()) {
-  return new Intl.DateTimeFormat('fa-IR', { timeZone: 'Asia/Tehran', weekday: 'long', day: 'numeric', month: 'long' }).format(value)
+  return new Intl.DateTimeFormat('fa-IR', { timeZone: activeTimezone, weekday: 'long', day: 'numeric', month: 'long' }).format(value)
 }
 
 export function formatToman(price: string | number) {
@@ -141,3 +160,10 @@ export async function getBarberServices(barberId: string) {
 export async function setBarberActive(barberId: string, isActive: boolean) {
   return (await api.patch(`/barbers/${barberId}`, { isActive })).data
 }
+
+export interface PublicSalon { id: string; name: string; timezone: string }
+export interface PublicBarber { id: string; salonId: string; isActive: boolean; user: PersonRef }
+export async function getSalons() { return (await api.get<PublicSalon[]>('/salons')).data }
+export async function getPublicBarbers(salonId: string) { return (await api.get<PublicBarber[]>('/barbers', { params: { salonId } })).data }
+export async function bookAppointment(input: { barberId: string; serviceId: string; startAt: string; note?: string }) { return (await api.post<AppointmentRecord>('/appointments', input)).data }
+export async function myAppointments() { return (await api.get<AppointmentRecord[]>('/appointments/mine')).data }

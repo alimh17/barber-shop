@@ -55,7 +55,7 @@ describe('AppointmentsService.createForAdmin', () => {
       duration: 30,
       price: '25.00',
     });
-    prisma.customer.findUnique.mockResolvedValue({ id: 'customer-1' });
+    prisma.customer.findUnique.mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' });
     prisma.barberService.findUnique.mockResolvedValue({
       barberId: 'barber-1',
       serviceId: 'service-1',
@@ -93,7 +93,7 @@ describe('AppointmentsService.createForAdmin', () => {
     expect(prisma.customer.findUnique).toHaveBeenCalledWith({
       where: { id: 'customer-1' },
     });
-    expect(salonAccessService.assertCanAccessSalon).toHaveBeenCalledTimes(1);
+    expect(salonAccessService.assertCanAccessSalon).toHaveBeenCalledTimes(2);
     expect(prisma.appointment.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -154,6 +154,12 @@ describe('AppointmentsService.createForAdmin', () => {
     );
     expect(salonAccessService.assertCanAccessSalon).toHaveBeenNthCalledWith(
       2,
+      'customer-user-1',
+      UserRole.CUSTOMER,
+      'salon-1',
+    );
+    expect(salonAccessService.assertCanAccessSalon).toHaveBeenNthCalledWith(
+      3,
       'admin-1',
       UserRole.ADMIN,
       'salon-2',

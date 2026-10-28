@@ -20,6 +20,8 @@ export function DashboardLayout() {
           { to: '/customers', label: 'مشتریان', icon: Users },
         ]
       : []),
+    ...(user.role === 'CUSTOMER' ? [{ to: '/book', label: 'رزرو نوبت', icon: CalendarDays }] : []),
+    ...(user.role === 'BARBER' ? [{ to: '/appointments', label: 'درخواست‌های نوبت', icon: CalendarDays }] : []),
     ...(user.role === 'SUPER_ADMIN' ? [{ to: '/salons/new', label: 'سالن جدید', icon: Building2 }] : []),
     ...(isAdmin
       ? [

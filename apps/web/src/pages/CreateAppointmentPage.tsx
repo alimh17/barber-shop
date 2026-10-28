@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, CalendarPlus, Save } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { getApiErrorMessage } from '../auth/api'
@@ -9,6 +9,8 @@ import {
   getAvailability,
   getBarberServices,
   listUsers,
+  loadSalonTimezone,
+  setActiveSalonTimezone,
   personName,
   tehranDate,
   type AvailabilitySlot,
@@ -34,6 +36,14 @@ export function CreateAppointmentPage() {
     user.barber && user.barber.isActive ? [{ user, barberId: user.barber.id, salonId: user.barber.salonId }] : [],
   )
   const selectedBarber = barbers.find((b) => b.barberId === barberId)
+  useEffect(() => {
+    if (!selectedBarber?.salonId) return
+    let active = true
+    loadSalonTimezone(selectedBarber.salonId).then((zone) => {
+      if (active) { setActiveSalonTimezone(zone); setDate(tehranDate()) }
+    }).catch(() => {})
+    return () => { active = false }
+  }, [selectedBarber?.salonId])
 
   const servicesQuery = useQuery({
     queryKey: ['barber-services', barberId],

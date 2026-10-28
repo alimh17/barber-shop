@@ -8,7 +8,8 @@ export default defineConfig({
   test: {
     globals: true,
     root: './',
-    include: ['**/*.spec.ts'],
+    include: ['src/**/*.spec.ts'],
+    exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
     // Override DATABASE_URL and REDIS_URL so integration tests can connect to
     // the Docker-exposed ports on localhost (127.0.0.1:5432 / :6379) instead
     // of the Docker-internal service hostname "postgres" which is unreachable

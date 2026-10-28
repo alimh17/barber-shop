@@ -23,19 +23,20 @@ export class SalonAccessService {
       return;
     }
 
-    const membership =
-      await this.prisma.salonMembership.findFirst({
-        where: {
-          userId,
-          salonId,
-          isActive: true,
-        },
-        select: {
-          id: true,
-        },
-      });
+    const [membership, barber] = await Promise.all([
+      this.prisma.salonMembership.findFirst({
+        where: { userId, salonId, isActive: true, salon: { isActive: true } },
+        select: { id: true },
+      }),
+      role === UserRole.BARBER
+        ? this.prisma.barber.findFirst({
+            where: { userId, salonId, isActive: true, salon: { isActive: true } },
+            select: { id: true },
+          })
+        : Promise.resolve(null),
+    ]);
 
-    if (!membership) {
+    if (role === UserRole.BARBER ? !barber : !membership) {
       throw new ForbiddenException(
         'You do not have access to this salon',
       );

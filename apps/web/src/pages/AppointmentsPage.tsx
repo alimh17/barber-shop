@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { getApiErrorMessage } from '../auth/api'
+import { useAuth } from '../auth/auth-context'
 import {
   appointmentStatusLabels,
   changeAppointmentStatus,
@@ -26,6 +27,8 @@ const statusFilters: StatusFilter[] = ['ALL', 'PENDING', 'CONFIRMED', 'COMPLETED
 
 export function AppointmentsPage() {
   const queryClient = useQueryClient()
+  const { session } = useAuth()
+  const isBarber = session?.user.role === 'BARBER'
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
   const [date, setDate] = useState('')
 
@@ -55,10 +58,10 @@ export function AppointmentsPage() {
           <h1>نوبت‌ها</h1>
           <p>نوبت‌های سالن‌های تحت مدیریت شما</p>
         </div>
-        <Link className="mgmt-primary-link" to="/appointments/new">
+        {!isBarber && <Link className="mgmt-primary-link" to="/appointments/new">
           <CalendarPlus size={19} />
           نوبت جدید
-        </Link>
+        </Link>}
       </div>
 
       <section className="mgmt-toolbar">
@@ -99,6 +102,7 @@ export function AppointmentsPage() {
             <AppointmentRow
               key={appointment.id}
               appointment={appointment}
+              isBarber={isBarber}
               busy={mutation.isPending && mutation.variables?.id === appointment.id}
               onChange={(next) => mutation.mutate({ id: appointment.id, next })}
             />
@@ -111,14 +115,16 @@ export function AppointmentsPage() {
 
 function AppointmentRow({
   appointment,
+  isBarber,
   busy,
   onChange,
 }: {
   appointment: AppointmentRecord
+  isBarber: boolean
   busy: boolean
   onChange: (next: AppointmentStatus) => void
 }) {
-  const actions = nextStatuses[appointment.status]
+  const actions = isBarber ? (appointment.status === 'PENDING' ? nextStatuses.PENDING : []) : nextStatuses[appointment.status]
 
   const handleAction = (next: AppointmentStatus) => {
     if (next === 'CANCELLED' && !window.confirm('این نوبت لغو شود؟')) return
