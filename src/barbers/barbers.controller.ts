@@ -39,6 +39,7 @@ export class BarbersController {
     UserRole.ADMIN,
     UserRole.SUPER_ADMIN,
     UserRole.CUSTOMER,
+    UserRole.BARBER,
   )
   findAll(
     @CurrentUser() user: CurrentUserData,

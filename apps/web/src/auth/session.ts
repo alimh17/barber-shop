@@ -15,5 +15,5 @@ export function readSession(): Session | null {
     return null
   }
 }
-export function writeSession(session: Session) { localStorage.setItem(SESSION_KEY, JSON.stringify(session)); window.dispatchEvent(new CustomEvent('auth:session', { detail: session })) }
+export function writeSession(session: Session) { localStorage.setItem(SESSION_KEY, JSON.stringify({ accessToken: session.accessToken, expiresAt: session.expiresAt, user: session.user })); window.dispatchEvent(new CustomEvent('auth:session', { detail: session })) }
 export function clearSession() { localStorage.removeItem(SESSION_KEY); window.dispatchEvent(new CustomEvent('auth:session', { detail: null })) }

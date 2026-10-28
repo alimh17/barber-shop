@@ -58,6 +58,7 @@ describe('SalonAccessService', () => {
           userId: 'admin-id',
           salonId: 'salon-id',
           isActive: true,
+          salon: { isActive: true },
         },
         select: {
           id: true,
@@ -97,6 +98,7 @@ describe('SalonAccessService', () => {
           userId: 'admin-id',
           salonId: 'another-salon-id',
           isActive: true,
+          salon: { isActive: true },
         },
         select: {
           id: true,

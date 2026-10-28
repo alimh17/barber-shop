@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
-import type { Request } from 'express';
+import { Body, Controller, Get, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { AuthService } from './auth.service.js';
@@ -24,8 +24,10 @@ export class AuthController {
   @Post('verify-otp')
   @ApiOperation({ summary: 'Verify OTP and sign in', description: 'Consumes a valid OTP, creates a customer when needed, and returns access and refresh tokens.' })
   @UseGuards(OtpRateLimitGuard)
-  verifyOtp(@Body() dto: VerifyOtpDto) {
-    return this.authService.verifyOtp(dto);
+  async verifyOtp(@Body() dto: VerifyOtpDto, @Res({ passthrough: true }) res: Response) {
+    const { refreshToken, ...result } = await this.authService.verifyOtp(dto);
+    this.setRefreshCookie(res, refreshToken);
+    return result;
   }
 
   @Get('me')
@@ -38,16 +40,37 @@ export class AuthController {
 
   @Post('refresh')
   @ApiOperation({ summary: 'Refresh access', description: 'Validates a refresh token and rotates the user token pair.' })
-  refresh(@Body() dto: RefreshTokenDto) {
-    return this.authService.refresh(dto.refreshToken);
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const token = this.getCookie(req, 'barbershop_refresh');
+    if (!token) throw new UnauthorizedException('Missing refresh cookie');
+    const { refreshToken, ...result } = await this.authService.refresh(token);
+    this.setRefreshCookie(res, refreshToken);
+    return result;
   }
 
   @Post('logout')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Log out', description: 'Revokes the stored refresh-token hash for the authenticated account.' })
   @UseGuards(JwtAuthGuard)
-  logout(@Req() req: Request) {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const user = (req as Request & { user: { id: string } }).user;
-    return this.authService.logout(user.id);
+    await this.authService.logout(user.id);
+    res.clearCookie('barbershop_refresh', { path: '/api/auth' });
+    return { message: 'Logged out successfully' };
+  }
+
+  private getCookie(req: Request, name: string): string | undefined {
+    const entry = req.headers.cookie?.split(';').map(v => v.trim()).find(v => v.startsWith(`${name}=`));
+    return entry ? decodeURIComponent(entry.slice(name.length + 1)) : undefined;
+  }
+
+  private setRefreshCookie(res: Response, token: string) {
+    res.cookie('barbershop_refresh', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/api/auth',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
   }
 }

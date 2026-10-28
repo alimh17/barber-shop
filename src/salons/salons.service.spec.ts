@@ -38,6 +38,7 @@ describe('SalonsService', () => {
         },
         salonMembership: {
             findUnique: vi.fn(),
+            findFirst: vi.fn(),
             create: vi.fn(),
             update: vi.fn(),
         },
@@ -70,6 +71,7 @@ describe('SalonsService', () => {
 
     beforeEach(() => {
         vi.resetAllMocks();
+        prisma.salonMembership.findFirst.mockResolvedValue(null);
 
         service = new SalonsService(
             prisma as unknown as PrismaService,
@@ -121,7 +123,7 @@ describe('SalonsService', () => {
         it('returns only active salons ordered by creation date', async () => {
             prisma.salon.findMany.mockResolvedValue([mockSalon]);
 
-            await expect(service.findAll()).resolves.toEqual([
+            await expect(service.findAll('admin-1', UserRole.SUPER_ADMIN)).resolves.toEqual([
                 mockSalon,
             ]);
 

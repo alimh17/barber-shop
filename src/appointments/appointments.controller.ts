@@ -53,9 +53,15 @@ export class AppointmentsController {
 
   @Get()
   @ApiOperation({ summary: 'List appointments', description: 'Returns appointments visible across salons managed by the caller; super administrators see all salons.' })
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.BARBER)
   findAll(@CurrentUser() user: CurrentUserData) {
     return this.appointmentsService.findAll(user.id, user.role);
+  }
+
+  @Get('mine')
+  @Roles(UserRole.CUSTOMER)
+  findMine(@CurrentUser() user: CurrentUserData) {
+    return this.appointmentsService.findMine(user.id);
   }
 
   @Get(':id')
@@ -78,7 +84,7 @@ export class AppointmentsController {
 
   @Patch(':id/status')
   @ApiOperation({ summary: 'Change appointment status', description: 'Applies the allowed appointment state-machine transition with concurrency protection.' })
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.BARBER)
   updateStatus(
     @Param('id') id: string,
     @Body() dto: UpdateAppointmentStatusDto,

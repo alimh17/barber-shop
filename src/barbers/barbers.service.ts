@@ -107,19 +107,15 @@ export class BarbersService {
       );
     }
 
-    if (salonId && role !== UserRole.CUSTOMER) {
-      await this.salonAccessService.assertCanAccessSalon(
-        userId,
-        role,
-        salonId,
-      );
+    if (salonId && role !== UserRole.SUPER_ADMIN) {
+      await this.salonAccessService.assertCanAccessSalon(userId, role, salonId);
     }
 
     return this.prisma.barber.findMany({
       where: salonId
         ? {
             salonId,
-            ...(role === UserRole.CUSTOMER
+            ...((role === UserRole.CUSTOMER || role === UserRole.BARBER)
               ? { isActive: true, salon: { isActive: true } }
               : {}),
           }

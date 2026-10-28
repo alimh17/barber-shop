@@ -70,6 +70,7 @@ describe('BarbersService', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        salonAccessService.assertCanAccessSalon.mockResolvedValue(undefined);
 
         service = new BarbersService(
             prisma as unknown as PrismaService,
@@ -277,7 +278,7 @@ describe('BarbersService', () => {
             );
             expect(
                 salonAccessService.assertCanAccessSalon,
-            ).not.toHaveBeenCalled();
+            ).toHaveBeenCalledWith('customer-1', UserRole.CUSTOMER, 'salon-1');
         });
     });
 

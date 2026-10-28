@@ -40,7 +40,9 @@ export class AuthService {
     let user = await this.usersService.findByPhone(dto.phone);
 
     if (!user) {
-      user = await this.usersService.createCustomer(dto.phone);
+      user = await this.usersService.createCustomer(dto.phone, dto.salonSlug);
+    } else if (user.role === 'CUSTOMER') {
+      await this.usersService.ensureCustomerSalon(user.id, dto.salonSlug);
     }
 
     if (user.status !== 'ACTIVE') {

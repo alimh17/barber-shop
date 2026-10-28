@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Prisma, User, UserRole, UserStatus } from '../generated/prisma/client.js';
@@ -37,17 +37,38 @@ export class UsersService {
     });
   }
 
-  async createCustomer(phone: string): Promise<User> {
+  async createCustomer(phone: string, salonSlug?: string): Promise<User> {
+    if (!salonSlug) throw new BadRequestException('Salon invitation link is required');
+    const salon = await this.prisma.salon.findFirst({ where: { slug: salonSlug, isActive: true } });
+    if (!salon) throw new NotFoundException('Salon not found');
     return this.prisma.user.create({
       data: {
-        phone,
-        role: 'CUSTOMER',
-        status: 'ACTIVE',
-
-        customer: {
-          create: {},
-        },
+        phone, role: 'CUSTOMER', status: 'ACTIVE',
+        customer: { create: {} },
+        salonMemberships: { create: { salonId: salon.id } },
       },
+    });
+  }
+
+  async ensureCustomerSalon(userId: string, salonSlug?: string): Promise<void> {
+    const membership = await this.prisma.salonMembership.findFirst({
+      where: { userId, isActive: true }, include: { salon: true },
+    });
+    if (membership) {
+      if (!membership.salon.isActive) throw new ForbiddenException('Salon is inactive');
+      if (salonSlug && membership.salon.slug !== salonSlug) {
+        throw new ForbiddenException('Account belongs to another salon');
+      }
+      return;
+    }
+    if (!salonSlug) throw new BadRequestException('Salon invitation link is required');
+    const salon = await this.prisma.salon.findFirst({ where: { slug: salonSlug, isActive: true } });
+    if (!salon) throw new NotFoundException('Salon not found');
+    const other = await this.prisma.salonMembership.findFirst({ where: { userId } });
+    if (other && other.salonId !== salon.id) throw new ConflictException('Account already belongs to another salon');
+    await this.prisma.salonMembership.upsert({
+      where: { userId_salonId: { userId, salonId: salon.id } },
+      update: { isActive: true }, create: { userId, salonId: salon.id },
     });
   }
 
@@ -116,7 +137,7 @@ export class UsersService {
     if (actorRole === UserRole.SUPER_ADMIN) return salonId ? this.salonRelationScope(salonId) : {};
     if (actorRole === UserRole.ADMIN) {
       const salonScope: Prisma.UserWhereInput = { OR: [
-        { salonMemberships: { some: { salonId: salonId, isActive: true, salon: { memberships: { some: { userId: actorId, isActive: true } } } } } },
+        { salonMemberships: { some: { ...(salonId ? { salonId } : {}), isActive: true, salon: { memberships: { some: { userId: actorId, isActive: true } } } } } },
         { barber: { is: { ...(salonId ? { salonId } : {}), salon: { memberships: { some: { userId: actorId, isActive: true } } } } } },
       ] };
       return { OR: [{ id: actorId }, salonScope] };
