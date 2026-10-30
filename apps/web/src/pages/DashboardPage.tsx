@@ -1,8 +1,19 @@
-import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, CalendarCheck, CalendarPlus, Clock3, Building2, Scissors, UserRoundCheck, UserRoundPlus, Users } from 'lucide-react'
-import { Link } from 'react-router-dom'
-import { useAuth } from '../auth/auth-context'
-import { SalonBarbersPanel } from '../features/salons/SalonBarbersPanel'
+import { useQuery } from '@tanstack/react-query';
+import {
+  ArrowLeft,
+  CalendarCheck,
+  CalendarPlus,
+  Clock3,
+  Building2,
+  Scissors,
+  UserRoundCheck,
+  UserRoundPlus,
+  Users,
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { useAuth } from '../auth/auth-context';
+import { SalonBarbersPanel } from '../features/salons/SalonBarbersPanel';
 import {
   appointmentStatusLabels,
   listAppointments,
@@ -12,35 +23,50 @@ import {
   tehranLongDate,
   tehranTime,
   type AppointmentRecord,
-} from '../features/management/api'
-import '../features/management/management.css'
+} from '../features/management/api';
+import '../features/management/management.css';
 
-const byStart = (a: AppointmentRecord, b: AppointmentRecord) => a.startAt.localeCompare(b.startAt)
-const toFa = (n: number) => n.toLocaleString('fa-IR')
+const byStart = (a: AppointmentRecord, b: AppointmentRecord) =>
+  a.startAt.localeCompare(b.startAt);
+const toFa = (n: number) => n.toLocaleString('fa-IR');
 
 export function DashboardPage() {
-  const { session } = useAuth()
-  const firstName = session?.user.fullName?.trim().split(/\s+/)[0] || 'دوست عزیز'
-  const canCreateSalon = session?.user.role === 'SUPER_ADMIN'
-  const canManageSalon = ['SUPER_ADMIN', 'ADMIN'].includes(session?.user.role ?? '')
+  const [renderedAt] = useState(() => Date.now());
+  const { session } = useAuth();
+  const firstName =
+    session?.user.fullName?.trim().split(/\s+/)[0] || 'دوست عزیز';
+  const canCreateSalon = session?.user.role === 'SUPER_ADMIN';
+  const canManageSalon = ['SUPER_ADMIN', 'ADMIN'].includes(
+    session?.user.role ?? '',
+  );
 
-  const appointmentsQuery = useQuery({ queryKey: ['appointments'], queryFn: listAppointments, enabled: canManageSalon })
+  const appointmentsQuery = useQuery({
+    queryKey: ['appointments'],
+    queryFn: listAppointments,
+    enabled: canManageSalon,
+  });
   const barbersQuery = useQuery({
     queryKey: ['team', 'barbers'],
     queryFn: () => listUsers({ role: 'BARBER', limit: 100 }),
     enabled: canManageSalon,
-  })
+  });
 
-  const today = tehranDate()
-  const all = appointmentsQuery.data ?? []
-  const todays = all.filter((a) => tehranDate(a.startAt) === today).sort(byStart)
-  const booked = todays.filter((a) => a.status !== 'CANCELLED')
-  const pendingCount = all.filter((a) => a.status === 'PENDING').length
-  const completedToday = todays.filter((a) => a.status === 'COMPLETED').length
-  const activeBarbers = (barbersQuery.data?.items ?? []).filter((u) => u.barber?.isActive).length
+  const today = tehranDate();
+  const all = appointmentsQuery.data ?? [];
+  const todays = all
+    .filter((a) => tehranDate(a.startAt) === today)
+    .sort(byStart);
+  const booked = todays.filter((a) => a.status !== 'CANCELLED');
+  const pendingCount = all.filter((a) => a.status === 'PENDING').length;
+  const completedToday = todays.filter((a) => a.status === 'COMPLETED').length;
+  const activeBarbers = (barbersQuery.data?.items ?? []).filter(
+    (u) => u.barber?.isActive,
+  ).length;
   const nextAppointment = booked.find(
-    (a) => new Date(a.startAt).getTime() >= Date.now() && (a.status === 'PENDING' || a.status === 'CONFIRMED'),
-  )
+    (a) =>
+      new Date(a.startAt).getTime() >= renderedAt &&
+      (a.status === 'PENDING' || a.status === 'CONFIRMED'),
+  );
 
   return (
     <>
@@ -96,7 +122,9 @@ export function DashboardPage() {
             <div>
               <p>آرایشگر فعال</p>
               <strong>{toFa(activeBarbers)}</strong>
-              <small className="muted">از {toFa(barbersQuery.data?.meta.total ?? 0)} نفر</small>
+              <small className="muted">
+                از {toFa(barbersQuery.data?.meta.total ?? 0)} نفر
+              </small>
             </div>
           </article>
         </section>
@@ -171,7 +199,9 @@ export function DashboardPage() {
                 {todays.map((a) => (
                   <div className="appointment-row" key={a.id}>
                     <time>{tehranTime(a.startAt)}</time>
-                    <span className="customer-avatar">{personName(a.customer?.user).charAt(0)}</span>
+                    <span className="customer-avatar">
+                      {personName(a.customer?.user).charAt(0)}
+                    </span>
                     <div className="appointment-main">
                       <strong>{personName(a.customer?.user)}</strong>
                       <span>{a.service?.name ?? 'خدمت'}</span>
@@ -196,7 +226,8 @@ export function DashboardPage() {
               <div>
                 <h2>نوبت بعدی</h2>
                 <p>
-                  {toFa(completedToday)} از {toFa(booked.length)} نوبت امروز تکمیل شده
+                  {toFa(completedToday)} از {toFa(booked.length)} نوبت امروز
+                  تکمیل شده
                 </p>
               </div>
             </div>
@@ -205,7 +236,8 @@ export function DashboardPage() {
                 <>
                   <span>ساعت {tehranTime(nextAppointment.startAt)}</span>
                   <strong>
-                    {personName(nextAppointment.customer?.user)} · {nextAppointment.service?.name ?? 'خدمت'}
+                    {personName(nextAppointment.customer?.user)} ·{' '}
+                    {nextAppointment.service?.name ?? 'خدمت'}
                   </strong>
                 </>
               ) : (
@@ -219,5 +251,5 @@ export function DashboardPage() {
         </section>
       ) : null}
     </>
-  )
+  );
 }

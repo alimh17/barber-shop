@@ -17,7 +17,10 @@ if (!connectionString) {
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString }),
 });
-const smsService = { sendOtp: async () => undefined } as SmsService;
+const smsService = {
+  prepareDelivery: async () => ({ salonId: null, provider: 'mock' as const }),
+  sendOtp: async () => undefined,
+} as SmsService;
 const service = new OtpService(prisma as unknown as PrismaService, smsService);
 const testPhones: string[] = [];
 

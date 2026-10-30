@@ -60,6 +60,11 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /generated/prisma
 
+# Vite development service-worker output
+/apps/web/dev-dist/
+
 # Generated TLS certificates and ACME challenge files
 /deploy/certbot/conf/
 /deploy/certbot/www/
+/deploy/tls/*
+!/deploy/tls/.gitkeep

@@ -1,0 +1,6 @@
+# Opt-in HTTPS overlay. Do not apply before certificate files exist.
+services:
+  nginx:
+    volumes:
+      - ./deploy/nginx/staging.conf:/etc/nginx/conf.d/staging.conf:ro
+      - ./deploy/tls:/etc/nginx/tls:ro

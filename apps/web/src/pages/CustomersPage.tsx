@@ -1,21 +1,32 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { UserRound } from 'lucide-react'
-import { useState } from 'react'
-import { listUsers, personName, userStatusLabels } from '../features/management/api'
-import { Pager } from '../features/management/ui'
-import '../features/management/management.css'
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { UserRound } from 'lucide-react';
+import { useState } from 'react';
+import {
+  listUsers,
+  personName,
+  userStatusLabels,
+} from '../features/management/api';
+import { Pager } from '../features/management/ui';
+import { formatPersianDate } from '../lib/locale';
+import '../features/management/management.css';
 
 export function CustomersPage() {
-  const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
-  const term = search.trim()
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const term = search.trim();
 
   const query = useQuery({
     queryKey: ['customers', term, page],
-    queryFn: () => listUsers({ role: 'CUSTOMER', search: term || undefined, page, limit: 20 }),
+    queryFn: () =>
+      listUsers({
+        role: 'CUSTOMER',
+        search: term || undefined,
+        page,
+        limit: 20,
+      }),
     placeholderData: keepPreviousData,
-  })
-  const items = query.data?.items ?? []
+  });
+  const items = query.data?.items ?? [];
 
   return (
     <>
@@ -33,8 +44,8 @@ export function CustomersPage() {
           placeholder="جستجو با نام یا شماره موبایل"
           value={search}
           onChange={(e) => {
-            setSearch(e.target.value)
-            setPage(1)
+            setSearch(e.target.value);
+            setPage(1);
           }}
         />
       </section>
@@ -70,14 +81,20 @@ export function CustomersPage() {
               </div>
               <div>
                 <span>{userStatusLabels[user.status] ?? user.status}</span>
-                <span>عضویت: {new Date(user.createdAt).toLocaleDateString('fa-IR')}</span>
+                <span>عضویت: {formatPersianDate(user.createdAt)}</span>
               </div>
             </div>
           ))}
         </section>
       ) : null}
 
-      {query.data ? <Pager page={page} totalPages={query.data.meta.totalPages} onChange={setPage} /> : null}
+      {query.data ? (
+        <Pager
+          page={page}
+          totalPages={query.data.meta.totalPages}
+          onChange={setPage}
+        />
+      ) : null}
     </>
-  )
+  );
 }

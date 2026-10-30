@@ -16,37 +16,68 @@ export class OtpService {
     private readonly smsService: SmsService,
   ) {}
 
-  async generate(phone: string) {
+  async generate(
+    phone: string,
+    salonSlug?: string,
+    allowPlatformBootstrap = false,
+  ) {
     phone = normalizeIranianPhone(phone);
+    const delivery = await this.smsService.prepareDelivery(
+      salonSlug,
+      allowPlatformBootstrap,
+    );
     const code = this.generateCode();
     const codeHash = await bcrypt.hash(code, 10);
     const expiresAt = new Date(Date.now() + this.otpExpiresInMs);
 
-    await this.prisma.$transaction(async (tx) => {
+    const otp = await this.prisma.$transaction(async (tx) => {
       // Serialize OTP generation per phone across application instances.
       // PostgreSQL releases this transaction-scoped advisory lock on commit/rollback.
-      await tx.$queryRaw`SELECT 1 WHERE pg_advisory_xact_lock(hashtextextended(${phone}, 0)) IS NULL`;
+      const lockKey = `${delivery.salonId ?? 'platform'}:${phone}`;
+      await tx.$queryRaw`SELECT 1 WHERE pg_advisory_xact_lock(hashtextextended(${lockKey}, 0)) IS NULL`;
       await tx.otpCode.updateMany({
-        where: { phone, usedAt: null },
+        where: { phone, salonId: delivery.salonId, usedAt: null },
         data: { usedAt: new Date() },
       });
-      await tx.otpCode.create({
-        data: { phone, codeHash, expiresAt },
+      return tx.otpCode.create({
+        data: { phone, salonId: delivery.salonId, codeHash, expiresAt },
+        select: { id: true },
       });
     });
 
-    if (process.env.NODE_ENV === 'production') {
-      await this.smsService.sendOtp(phone, code);
+    // Delivery mode is selected explicitly by SMS_PROVIDER, not NODE_ENV.
+    try {
+      await this.smsService.sendOtp(phone, code, delivery);
+    } catch (error) {
+      // A code that was not delivered must never remain valid. The rate-limit
+      // attempt is intentionally retained to prevent provider-failure abuse.
+      await this.prisma.otpCode.updateMany({
+        where: { id: otp.id, usedAt: null },
+        data: { usedAt: new Date() },
+      });
+      throw error;
     }
 
     return { code, expiresAt };
   }
 
-  async verify(phone: string, code: string): Promise<void> {
+  async verify(phone: string, code: string, salonSlug?: string): Promise<void> {
     phone = normalizeIranianPhone(phone);
+    const salon = salonSlug
+      ? await this.prisma.salon.findFirst({
+          where: { slug: salonSlug, isActive: true },
+          select: { id: true },
+        })
+      : null;
+    if (salonSlug && !salon) throw new BadRequestException('Salon not found');
     const now = new Date();
     const otp = await this.prisma.otpCode.findFirst({
-      where: { phone, usedAt: null, expiresAt: { gt: now } },
+      where: {
+        phone,
+        salonId: salon?.id ?? null,
+        usedAt: null,
+        expiresAt: { gt: now },
+      },
       orderBy: { createdAt: 'desc' },
     });
 

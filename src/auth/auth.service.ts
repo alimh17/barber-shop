@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -10,6 +14,7 @@ import { UsersService } from '../users/users.service.js';
 import { RequestOtpDto } from './dto/request-otp.dto.js';
 import { VerifyOtpDto } from './dto/verify-otp.dto.js';
 import { JwtExpiresIn } from './types/type.js';
+import { UserRole } from '../generated/prisma/client.js';
 
 @Injectable()
 export class AuthService {
@@ -21,13 +26,32 @@ export class AuthService {
   ) {}
 
   async requestOtp(dto: RequestOtpDto) {
-    const result = await this.otpService.generate(dto.phone);
+    let allowPlatformBootstrap = false;
+    if (!dto.salonSlug) {
+      const platformUser = await this.usersService.findByPhone(dto.phone);
+      if (platformUser?.role !== UserRole.SUPER_ADMIN) {
+        throw new BadRequestException('Salon invitation link is required');
+      }
+    } else {
+      allowPlatformBootstrap = await this.usersService.canBootstrapSalonSms(
+        dto.phone,
+        dto.salonSlug,
+      );
+    }
+    const result = await this.otpService.generate(
+      dto.phone,
+      dto.salonSlug,
+      allowPlatformBootstrap,
+    );
     const response: { message: string; expiresAt: Date; otp?: string } = {
       message: 'OTP sent successfully',
       expiresAt: result.expiresAt,
     };
 
-    if (this.configService.get<string>('NODE_ENV') === 'development') {
+    if (
+      this.configService.get<string>('NODE_ENV') === 'development' &&
+      this.configService.get<string>('SMS_PROVIDER') === 'mock'
+    ) {
       response.otp = result.code;
     }
 
@@ -35,7 +59,7 @@ export class AuthService {
   }
 
   async verifyOtp(dto: VerifyOtpDto) {
-    await this.otpService.verify(dto.phone, dto.code);
+    await this.otpService.verify(dto.phone, dto.code, dto.salonSlug);
 
     let user = await this.usersService.findByPhone(dto.phone);
 
@@ -56,6 +80,9 @@ export class AuthService {
     id: string;
     phone: string;
     role: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    birthDate?: Date | null;
   }) {
     const payload = {
       sub: user.id,
@@ -82,6 +109,9 @@ export class AuthService {
         id: user.id,
         phone: user.phone,
         role: user.role,
+        firstName: user.firstName ?? null,
+        lastName: user.lastName ?? null,
+        birthDate: user.birthDate ?? null,
       },
     };
   }
