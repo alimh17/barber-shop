@@ -1,6 +1,77 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { logout, refreshSession, requestOtp, verifyOtp } from './api'
-import { clearSession, readSession, writeSession } from './session'
-import type { Session } from './types'
-import { AuthContext } from './auth-context'
-export function AuthProvider({ children }: { children: ReactNode }) { const [session, setSession] = useState<Session | null>(() => readSession()); const [ready, setReady] = useState(() => !session || session.expiresAt > Date.now()); useEffect(() => { let active = true; const current = readSession(); if (current && current.expiresAt <= Date.now()) refreshSession().then((next) => { if (active) setSession(next) }).catch(() => { if (active) { clearSession(); setSession(null) } }).finally(() => { if (active) setReady(true) }); const sync = (event: Event) => setSession((event as CustomEvent<Session | null>).detail); window.addEventListener('auth:session', sync); return () => { active = false; window.removeEventListener('auth:session', sync) } }, []); const signIn = useCallback(async (phone: string, code: string, salonSlug?: string) => { const next = await verifyOtp(phone, code, salonSlug); writeSession(next); setSession(next) }, []); const signOut = useCallback(async () => { await logout(); setSession(null) }, []); const value = useMemo(() => ({ session, ready, sendOtp: requestOtp, signIn, signOut }), [session, ready, signIn, signOut]); return <AuthContext value={value}>{children}</AuthContext> }
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
+import { logout, refreshSession, requestOtp, verifyOtp } from './api';
+import { clearSession, readSession, writeSession } from './session';
+import type { Session, User } from './types';
+import { AuthContext } from './auth-context';
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<Session | null>(() => readSession());
+  const [ready, setReady] = useState(
+    () => !session || session.expiresAt > Date.now(),
+  );
+
+  useEffect(() => {
+    let active = true;
+    const current = readSession();
+    if (current && current.expiresAt <= Date.now())
+      refreshSession()
+        .then((next) => {
+          if (active) setSession(next);
+        })
+        .catch(() => {
+          if (active) {
+            clearSession();
+            setSession(null);
+          }
+        })
+        .finally(() => {
+          if (active) setReady(true);
+        });
+    const sync = (event: Event) =>
+      setSession((event as CustomEvent<Session | null>).detail);
+    window.addEventListener('auth:session', sync);
+    return () => {
+      active = false;
+      window.removeEventListener('auth:session', sync);
+    };
+  }, []);
+
+  const signIn = useCallback(
+    async (phone: string, code: string, salonSlug?: string) => {
+      const next = await verifyOtp(phone, code, salonSlug);
+      writeSession(next);
+      setSession(next);
+    },
+    [],
+  );
+  const signOut = useCallback(async () => {
+    await logout();
+    setSession(null);
+  }, []);
+  const updateUser = useCallback(
+    (user: Partial<User>) => {
+      if (!session) return;
+      const next = { ...session, user: { ...session.user, ...user } };
+      writeSession(next);
+      setSession(next);
+    },
+    [session],
+  );
+  const value = useMemo(
+    () => ({
+      session,
+      ready,
+      sendOtp: requestOtp,
+      signIn,
+      signOut,
+      updateUser,
+    }),
+    [session, ready, signIn, signOut, updateUser],
+  );
+  return <AuthContext value={value}>{children}</AuthContext>;
+}

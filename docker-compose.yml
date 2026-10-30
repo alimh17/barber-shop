@@ -7,15 +7,19 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:-barbershop}
     expose:
-      - "5432"
+      - '5432'
     ports:
-      - "127.0.0.1:5432:5432"
+      - '127.0.0.1:5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - backend
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-barbershop} -d ${POSTGRES_DB:-barbershop}"]
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-barbershop} -d ${POSTGRES_DB:-barbershop}',
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,17 +28,26 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ["sh", "-c", "redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\" --maxmemory 128mb --maxmemory-policy noeviction"]
+    command:
+      [
+        'sh',
+        '-c',
+        'redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD" --maxmemory 128mb --maxmemory-policy noeviction',
+      ]
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
     expose:
-      - "6379"
+      - '6379'
     volumes:
       - redis_data:/data
     networks:
       - backend
     healthcheck:
-      test: ["CMD-SHELL", "REDISCLI_AUTH=$$REDIS_PASSWORD redis-cli ping | grep -q PONG"]
+      test:
+        [
+          'CMD-SHELL',
+          'REDISCLI_AUTH=$$REDIS_PASSWORD redis-cli ping | grep -q PONG',
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -55,15 +68,28 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-barbershop}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-barbershop}?schema=public
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
+      SMS_PROVIDER: ${SMS_PROVIDER:-mock}
+      KAVENEGAR_API_KEY: ${KAVENEGAR_API_KEY:-}
+      KAVENEGAR_VERIFY_TEMPLATE: ${KAVENEGAR_VERIFY_TEMPLATE:-}
+      SMS_CREDENTIALS_ENCRYPTION_KEY: ${SMS_CREDENTIALS_ENCRYPTION_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
     expose:
-      - "3000"
+      - '3000'
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -77,13 +103,13 @@ services:
       context: .
       dockerfile: Dockerfile
       target: build
-    profiles: ["tools"]
+    profiles: ['tools']
     env_file:
       - .env
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER:-barbershop}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-barbershop}?schema=public
-    command: ["pnpm", "prisma", "migrate", "deploy"]
+    command: ['pnpm', 'prisma', 'migrate', 'deploy']
     depends_on:
       postgres:
         condition: service_healthy
@@ -97,8 +123,8 @@ services:
       target: web
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
       - ./deploy/certbot/conf:/etc/letsencrypt:ro
       - ./deploy/certbot/www:/var/www/certbot:ro

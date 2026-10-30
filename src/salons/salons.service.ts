@@ -1,4 +1,3 @@
-
 import {
   BadRequestException,
   ConflictException,
@@ -6,23 +5,24 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import {
-  UserRole,
-  UserStatus,
-} from '../generated/prisma/client.js';
+import { UserRole, UserStatus } from '../generated/prisma/client.js';
 
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ConfigService } from '@nestjs/config';
+import { encryptSmsSecret } from '../otp/sms-credentials.crypto.js';
 
 import { SalonAccessService } from './salon-access.service.js';
 import { CreateSalonDto } from './dto/create-salon.dto.js';
 import { UpdateSalonDto } from './dto/update-salon.dto.js';
 import { CreateSalonMembershipDto } from './dto/create-salon-membership.dto.js';
+import { UpdateSalonSmsConfigDto } from './dto/update-salon-sms-config.dto.js';
 
 @Injectable()
 export class SalonsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly salonAccessService: SalonAccessService,
+    private readonly configService: ConfigService,
   ) {}
 
   async create(dto: CreateSalonDto) {
@@ -50,9 +50,12 @@ export class SalonsService {
   }
 
   async findAll(userId: string, role: UserRole) {
-    const scope = role === UserRole.SUPER_ADMIN ? {} : role === UserRole.BARBER
-      ? { barbers: { some: { userId, isActive: true } } }
-      : { memberships: { some: { userId, isActive: true } } };
+    const scope =
+      role === UserRole.SUPER_ADMIN
+        ? {}
+        : role === UserRole.BARBER
+          ? { barbers: { some: { userId, isActive: true } } }
+          : { memberships: { some: { userId, isActive: true } } };
     return this.prisma.salon.findMany({
       where: { isActive: true, ...scope },
       orderBy: { createdAt: 'desc' },
@@ -71,7 +74,8 @@ export class SalonsService {
   async findVisibleById(id: string, userId: string, role: UserRole) {
     if (role !== UserRole.SUPER_ADMIN) {
       const salons = await this.findAll(userId, role);
-      if (!salons.some((salon) => salon.id === id)) throw new NotFoundException('Salon not found');
+      if (!salons.some((salon) => salon.id === id))
+        throw new NotFoundException('Salon not found');
     }
     return this.findById(id);
   }
@@ -98,11 +102,7 @@ export class SalonsService {
   ) {
     await this.findById(id);
 
-    await this.salonAccessService.assertCanAccessSalon(
-      userId,
-      role,
-      id,
-    );
+    await this.salonAccessService.assertCanAccessSalon(userId, role, id);
 
     if (dto.slug) {
       const existingSalon = await this.prisma.salon.findFirst({
@@ -127,18 +127,10 @@ export class SalonsService {
     });
   }
 
-  async remove(
-    id: string,
-    userId: string,
-    role: UserRole,
-  ) {
+  async remove(id: string, userId: string, role: UserRole) {
     await this.findById(id);
 
-    await this.salonAccessService.assertCanAccessSalon(
-      userId,
-      role,
-      id,
-    );
+    await this.salonAccessService.assertCanAccessSalon(userId, role, id);
 
     return this.prisma.salon.update({
       where: {
@@ -150,10 +142,7 @@ export class SalonsService {
     });
   }
 
-  async createMembership(
-    salonId: string,
-    dto: CreateSalonMembershipDto,
-  ) {
+  async createMembership(salonId: string, dto: CreateSalonMembershipDto) {
     await this.findById(salonId);
 
     const user = await this.prisma.user.findUnique({
@@ -186,17 +175,17 @@ export class SalonsService {
     const existingOther = await this.prisma.salonMembership.findFirst({
       where: { userId: dto.userId, isActive: true, salonId: { not: salonId } },
     });
-    if (existingOther) throw new ConflictException('Admin already belongs to another salon');
+    if (existingOther)
+      throw new ConflictException('Admin already belongs to another salon');
 
-    const existingMembership =
-      await this.prisma.salonMembership.findUnique({
-        where: {
-          userId_salonId: {
-            userId: dto.userId,
-            salonId,
-          },
+    const existingMembership = await this.prisma.salonMembership.findUnique({
+      where: {
+        userId_salonId: {
+          userId: dto.userId,
+          salonId,
         },
-      });
+      },
+    });
 
     if (existingMembership?.isActive) {
       throw new ConflictException(
@@ -223,26 +212,20 @@ export class SalonsService {
     });
   }
 
-  async deactivateMembership(
-    salonId: string,
-    userId: string,
-  ) {
+  async deactivateMembership(salonId: string, userId: string) {
     await this.findById(salonId);
 
-    const membership =
-      await this.prisma.salonMembership.findUnique({
-        where: {
-          userId_salonId: {
-            userId,
-            salonId,
-          },
+    const membership = await this.prisma.salonMembership.findUnique({
+      where: {
+        userId_salonId: {
+          userId,
+          salonId,
         },
-      });
+      },
+    });
 
     if (!membership || !membership.isActive) {
-      throw new NotFoundException(
-        'Active salon membership not found',
-      );
+      throw new NotFoundException('Active salon membership not found');
     }
 
     return this.prisma.salonMembership.update({
@@ -253,5 +236,66 @@ export class SalonsService {
         isActive: false,
       },
     });
+  }
+
+  async getSmsConfig(id: string, userId: string, role: UserRole) {
+    await this.findById(id);
+    await this.salonAccessService.assertCanAccessSalon(userId, role, id);
+    const config = await this.prisma.salonSmsConfig.findUnique({
+      where: { salonId: id },
+      select: {
+        verifyTemplate: true,
+        apiKeyLast4: true,
+        isActive: true,
+        updatedAt: true,
+      },
+    });
+    return config ? { configured: true, ...config } : { configured: false };
+  }
+
+  async updateSmsConfig(
+    id: string,
+    dto: UpdateSalonSmsConfigDto,
+    userId: string,
+    role: UserRole,
+  ) {
+    await this.findById(id);
+    await this.salonAccessService.assertCanAccessSalon(userId, role, id);
+    const encryptionKey = this.configService.getOrThrow<string>(
+      'SMS_CREDENTIALS_ENCRYPTION_KEY',
+    );
+    const secret = encryptSmsSecret(dto.apiKey.trim(), encryptionKey);
+    const data = {
+      encryptedApiKey: secret.encrypted,
+      apiKeyIv: secret.iv,
+      apiKeyAuthTag: secret.authTag,
+      apiKeyLast4: dto.apiKey.trim().slice(-4),
+      verifyTemplate: dto.verifyTemplate.trim(),
+      isActive: dto.isActive ?? true,
+    };
+    const saved = await this.prisma.salonSmsConfig.upsert({
+      where: { salonId: id },
+      create: { salonId: id, ...data },
+      update: data,
+      select: {
+        verifyTemplate: true,
+        apiKeyLast4: true,
+        isActive: true,
+        updatedAt: true,
+      },
+    });
+    return { configured: true, ...saved };
+  }
+
+  async disableSmsConfig(id: string, userId: string, role: UserRole) {
+    await this.findById(id);
+    await this.salonAccessService.assertCanAccessSalon(userId, role, id);
+    const result = await this.prisma.salonSmsConfig.updateMany({
+      where: { salonId: id },
+      data: { isActive: false },
+    });
+    if (result.count === 0)
+      throw new NotFoundException('SMS configuration not found');
+    return { configured: true, isActive: false };
   }
 }

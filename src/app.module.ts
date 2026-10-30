@@ -24,6 +24,9 @@ import { AppointmentsController } from './appointments/appointments.controller.j
 import { AppointmentsModule } from './appointments/appointments.module.js';
 import { AvailabilityModule } from './availability/availability.module.js';
 import { RedisModule } from './redis/redis.module.js';
+import { validateEnvironment } from './config/environment.js';
+import { ReportsModule } from './reports/reports.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -38,6 +41,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     // }),
     ConfigModule.forRoot({
       isGlobal: true,
+      validate: validateEnvironment,
     }),
     PrismaModule,
     RedisModule,
@@ -52,6 +56,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     SchedulesModule,
     AppointmentsModule,
     AvailabilityModule,
+    ReportsModule,
+    NotificationsModule,
   ],
   controllers: [
     AppController,

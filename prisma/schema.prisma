@@ -43,19 +43,37 @@ model User {
   phone            String     @unique
   firstName        String?
   lastName         String?
+  birthDate        DateTime?  @db.Date
   refreshTokenHash String?
   role             UserRole   @default(CUSTOMER)
   status           UserStatus @default(ACTIVE)
 
-  customer         Customer?
-  barber           Barber?
-  salonMemberships SalonMembership[]
+  customer          Customer?
+  barber            Barber?
+  salonMemberships  SalonMembership[]
+  pushSubscriptions PushSubscription[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([role])
   @@index([status])
+}
+
+model PushSubscription {
+  id        String  @id @default(uuid())
+  userId    String
+  endpoint  String  @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model OtpCode {
@@ -66,8 +84,10 @@ model OtpCode {
   attempts  Int       @default(0)
   usedAt    DateTime?
   createdAt DateTime  @default(now())
+  salonId   String?
 
   @@index([phone, createdAt])
+  @@index([salonId, phone, createdAt])
   @@index([expiresAt])
 }
 
@@ -87,11 +107,25 @@ model Salon {
   daysOff      DayOff[]
   appointments Appointment[]
   memberships  SalonMembership[]
+  smsConfig    SalonSmsConfig?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([isActive])
+}
+
+model SalonSmsConfig {
+  salonId         String   @id
+  encryptedApiKey String
+  apiKeyIv        String
+  apiKeyAuthTag   String
+  apiKeyLast4     String
+  verifyTemplate  String
+  isActive        Boolean  @default(true)
+  salon           Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model SalonMembership {

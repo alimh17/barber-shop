@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsString, Matches } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
 import { normalizeIranianPhone } from '../phone.util.js';
 
 export class RequestOtpDto {
@@ -12,4 +12,9 @@ export class RequestOtpDto {
     message: 'phone must be a valid Iranian mobile number',
   })
   phone: string;
+
+  @IsString()
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+  @IsOptional()
+  salonSlug?: string;
 }

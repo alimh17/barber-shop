@@ -6,7 +6,7 @@ import { UsersService } from '../users/users.service.js';
 import { AuthService } from './auth.service.js';
 
 describe('AuthService OTP exposure', () => {
-  const users = {} as UsersService;
+  const users = { findByPhone: vi.fn(), canBootstrapSalonSms: vi.fn() };
   const otp = { generate: vi.fn() };
   const jwt = {} as JwtService;
   const configValues: Record<string, string | undefined> = {};
@@ -22,8 +22,10 @@ describe('AuthService OTP exposure', () => {
       code: '123456',
       expiresAt: new Date('2026-10-09T00:00:00.000Z'),
     });
+    users.findByPhone.mockResolvedValue({ role: 'SUPER_ADMIN' });
+    users.canBootstrapSalonSms.mockResolvedValue(false);
     service = new AuthService(
-      users,
+      users as unknown as UsersService,
       otp as unknown as OtpService,
       jwt,
       config as unknown as ConfigService,
@@ -50,10 +52,24 @@ describe('AuthService OTP exposure', () => {
 
   it('exposes the OTP in development without requiring an SMS provider', async () => {
     configValues.NODE_ENV = 'development';
+    configValues.SMS_PROVIDER = 'mock';
     await expect(
       service.requestOtp({ phone: '09120000000' }),
     ).resolves.toMatchObject({
       otp: '123456',
     });
+  });
+
+  it('passes a verified initial-admin fallback decision for a salon login', async () => {
+    users.canBootstrapSalonSms.mockResolvedValueOnce(true);
+    await service.requestOtp({
+      phone: '09120000000',
+      salonSlug: 'tenant-salon',
+    });
+    expect(otp.generate).toHaveBeenCalledWith(
+      '09120000000',
+      'tenant-salon',
+      true,
+    );
   });
 });

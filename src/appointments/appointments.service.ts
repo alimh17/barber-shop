@@ -9,6 +9,7 @@ import { AppointmentStatus, UserRole } from '../generated/prisma/client.js';
 import { AvailabilityService } from '../availability/availability.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SalonAccessService } from '../salons/salon-access.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { CreateAdminAppointmentDto } from './dto/create-admin-appointment.dto.js';
 import { CreateAppointmentDto } from './dto/create-appointment.dto.js';
 import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto.js';
@@ -20,6 +21,7 @@ export class AppointmentsService {
     private readonly prisma: PrismaService,
     private readonly availabilityService: AvailabilityService,
     private readonly salonAccessService: SalonAccessService,
+    private readonly notificationsService?: NotificationsService,
   ) {}
 
   /**
@@ -67,9 +69,16 @@ export class AppointmentsService {
       throw new NotFoundException('Customer not found');
     }
 
-    const barber = await this.prisma.barber.findUnique({ where: { id: dto.barberId }, select: { salonId: true } });
+    const barber = await this.prisma.barber.findUnique({
+      where: { id: dto.barberId },
+      select: { salonId: true },
+    });
     if (!barber) throw new NotFoundException('Barber not found');
-    await this.salonAccessService.assertCanAccessSalon(userId, UserRole.CUSTOMER, barber.salonId);
+    await this.salonAccessService.assertCanAccessSalon(
+      userId,
+      UserRole.CUSTOMER,
+      barber.salonId,
+    );
     return this.createForCustomer(customer.id, dto);
   }
 
@@ -106,7 +115,11 @@ export class AppointmentsService {
       throw new NotFoundException('Customer not found');
     }
     if (role !== UserRole.SUPER_ADMIN) {
-      await this.salonAccessService.assertCanAccessSalon(customer.userId, UserRole.CUSTOMER, barber.salonId);
+      await this.salonAccessService.assertCanAccessSalon(
+        customer.userId,
+        UserRole.CUSTOMER,
+        barber.salonId,
+      );
     }
 
     return this.createForCustomer(customer.id, dto, {
@@ -232,7 +245,7 @@ export class AppointmentsService {
     }
 
     try {
-      return await this.prisma.appointment.create({
+      const appointment = await this.prisma.appointment.create({
         data: {
           salonId: barber.salonId,
           customerId,
@@ -275,6 +288,8 @@ export class AppointmentsService {
           service: true,
         },
       });
+      void this.notificationsService?.notifyAppointmentCreated(appointment.id);
+      return appointment;
     } catch (error) {
       if (this.isAppointmentOverlapConstraintError(error)) {
         throw new ConflictException(
@@ -344,8 +359,19 @@ export class AppointmentsService {
    */
   async findMine(userId: string) {
     return this.prisma.appointment.findMany({
-      where: { customer: { userId }, salon: { memberships: { some: { userId, isActive: true } } } },
-      include: { barber: { include: { user: { select: { firstName: true, lastName: true, phone: true } } } }, service: true, salon: true },
+      where: {
+        customer: { userId },
+        salon: { memberships: { some: { userId, isActive: true } } },
+      },
+      include: {
+        barber: {
+          include: {
+            user: { select: { firstName: true, lastName: true, phone: true } },
+          },
+        },
+        service: true,
+        salon: true,
+      },
       orderBy: { startAt: 'desc' },
     });
   }
@@ -355,22 +381,22 @@ export class AppointmentsService {
       role === UserRole.BARBER
         ? { barber: { userId } }
         : role === UserRole.SUPER_ADMIN
-        ? {}
-        : {
-            salonId: {
-              in: (
-                await this.prisma.salonMembership.findMany({
-                  where: {
-                    userId,
-                    isActive: true,
-                  },
-                  select: {
-                    salonId: true,
-                  },
-                })
-              ).map((membership) => membership.salonId),
-            },
-          };
+          ? {}
+          : {
+              salonId: {
+                in: (
+                  await this.prisma.salonMembership.findMany({
+                    where: {
+                      userId,
+                      isActive: true,
+                    },
+                    select: {
+                      salonId: true,
+                    },
+                  })
+                ).map((membership) => membership.salonId),
+              },
+            };
 
     return this.prisma.appointment.findMany({
       where,
@@ -444,9 +470,8 @@ export class AppointmentsService {
 
     const barberId = dto.barberId ?? appointment.barberId;
     const serviceId = dto.serviceId ?? appointment.serviceId;
-    const startAt = dto.startAt === undefined
-      ? appointment.startAt
-      : new Date(dto.startAt);
+    const startAt =
+      dto.startAt === undefined ? appointment.startAt : new Date(dto.startAt);
 
     if (Number.isNaN(startAt.getTime())) {
       throw new BadRequestException('Invalid startAt');
@@ -466,7 +491,9 @@ export class AppointmentsService {
     // appointments, but never reschedule one into the past or alter its
     // scheduling details after its start time.
     if (isScheduleChanged && startAt <= new Date()) {
-      throw new BadRequestException('Appointment cannot be scheduled in the past');
+      throw new BadRequestException(
+        'Appointment cannot be scheduled in the past',
+      );
     }
 
     // A note-only edit must not revalidate a historical time slot against
@@ -490,12 +517,32 @@ export class AppointmentsService {
       return await this.prisma.appointment.findUnique({
         where: { id },
         include: {
-          customer: { include: { user: { select: {
-            id: true, phone: true, firstName: true, lastName: true, role: true,
-          } } } },
-          barber: { include: { user: { select: {
-            id: true, phone: true, firstName: true, lastName: true, role: true,
-          } } } },
+          customer: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  phone: true,
+                  firstName: true,
+                  lastName: true,
+                  role: true,
+                },
+              },
+            },
+          },
+          barber: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  phone: true,
+                  firstName: true,
+                  lastName: true,
+                  role: true,
+                },
+              },
+            },
+          },
           service: true,
           salon: true,
         },
@@ -597,19 +644,41 @@ export class AppointmentsService {
       return await this.prisma.appointment.findUnique({
         where: { id },
         include: {
-          customer: { include: { user: { select: {
-            id: true, phone: true, firstName: true, lastName: true, role: true,
-          } } } },
-          barber: { include: { user: { select: {
-            id: true, phone: true, firstName: true, lastName: true, role: true,
-          } } } },
+          customer: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  phone: true,
+                  firstName: true,
+                  lastName: true,
+                  role: true,
+                },
+              },
+            },
+          },
+          barber: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  phone: true,
+                  firstName: true,
+                  lastName: true,
+                  role: true,
+                },
+              },
+            },
+          },
           service: true,
           salon: true,
         },
       });
     } catch (error) {
       if (this.isAppointmentOverlapConstraintError(error)) {
-        throw new ConflictException('Barber is already booked during this time');
+        throw new ConflictException(
+          'Barber is already booked during this time',
+        );
       }
       throw error;
     }
@@ -638,11 +707,20 @@ export class AppointmentsService {
         select: { id: true },
       });
       if (!ownBarber) throw new NotFoundException('Appointment not found');
-      if (dto.status !== AppointmentStatus.CONFIRMED && dto.status !== AppointmentStatus.CANCELLED) {
-        throw new BadRequestException('Barber may only confirm or reject pending appointments');
+      if (
+        dto.status !== AppointmentStatus.CONFIRMED &&
+        dto.status !== AppointmentStatus.CANCELLED
+      ) {
+        throw new BadRequestException(
+          'Barber may only confirm or reject pending appointments',
+        );
       }
     } else {
-      await this.salonAccessService.assertCanAccessSalon(userId, role, appointment.salonId);
+      await this.salonAccessService.assertCanAccessSalon(
+        userId,
+        role,
+        appointment.salonId,
+      );
     }
 
     const allowedTransitions: Record<AppointmentStatus, AppointmentStatus[]> = {
@@ -715,7 +793,7 @@ export class AppointmentsService {
         );
       }
 
-      return await this.prisma.appointment.findUnique({
+      const updated = await this.prisma.appointment.findUnique({
         where: { id },
         include: {
           customer: {
@@ -748,6 +826,11 @@ export class AppointmentsService {
           salon: true,
         },
       });
+      void this.notificationsService?.notifyAppointmentStatusChanged(
+        id,
+        dto.status,
+      );
+      return updated;
     } catch (error) {
       if (this.isAppointmentOverlapConstraintError(error)) {
         throw new ConflictException(

@@ -1,163 +1,207 @@
-# معماری و جریان سیستم
+# نمای سریع سیستم — Barbershop
 
-این سند نمای سریع معماری سامانه رزرو آرایشگاه را ارائه می‌کند؛ از رابط کاربری تا API، احراز هویت، محاسبه زمان‌های آزاد و ثبت نوبت.
+> سند زنده معماری و مسیرهای اصلی. با تغییر کدهای مرتبط، این فایل نیز در همان تغییر به‌روزرسانی می‌شود (طبق `AGENTS.md`). آخرین بازبینی: 2026-10-29.
 
-## ۱. معماری کلان
+## ۰. کل سیستم در یک نگاه
+
+```mermaid
+flowchart TD
+    ENTRY["ورود کاربر به پنل وب"] --> LOGIN["ورود با موبایل و OTP"]
+    LOGIN --> PROFILE["تکمیل یا ویرایش پروفایل شخصی"]
+    PROFILE --> ROLE{"نقش کاربر"}
+    ROLE -->|SUPER_ADMIN| SUPER["مدیریت کل سالن‌ها و کاربران"]
+    ROLE -->|ADMIN| ADMIN["مدیریت سالن‌های مجاز"]
+    ROLE -->|BARBER| BARBER["مشاهده نوبت‌ها و برنامه کاری"]
+    ROLE -->|CUSTOMER| CUSTOMER["انتخاب سالن و خدمت"]
+    SUPER --> SETUP["ایجاد سالن و انتساب مدیر"]
+    ADMIN --> SETUP2["تعریف آرایشگر، خدمات و برنامه کاری"]
+    ADMIN --> REPORT["مشاهده درآمد سالن و خروجی Excel"]
+    SETUP --> SETUP2
+    SETUP2 --> AVAIL["محاسبه زمان‌های آزاد"]
+    CUSTOMER --> AVAIL
+    AVAIL --> REQUEST["درخواست رزرو"]
+    REQUEST --> VALIDATE{"نقش، سالن، خدمت، برنامه و تداخل معتبرند؟"}
+    VALIDATE -->|خیر| RETRY["خطا یا انتخاب زمان دیگر"]
+    RETRY --> AVAIL
+    VALIDATE -->|بله| DB["ثبت نوبت در PostgreSQL"]
+    DB --> STATUS["مدیریت وضعیت نوبت"]
+    ADMIN --> STATUS
+    BARBER --> STATUS
+    STATUS --> FINAL["تأیید، تکمیل، لغو یا عدم حضور"]
+```
+
+این نمودار نمای مفهومی نقش‌ها و مسیرهاست؛ دسترسی دقیق هر عملیات در سمت سرور تعیین می‌شود و همه مسیرهای نشان‌داده‌شده الزاماً در UI برای هر نقش در دسترس نیستند.
+
+## ۱. معماری فنی
 
 ```mermaid
 flowchart TB
-    USER["کاربر / مرورگر"]
-    WEB["پنل وب React + Vite<br/>apps/web"]
-    NGINX["Nginx<br/>فایل‌های استاتیک و Reverse Proxy"]
-    API["NestJS REST API<br/>/api"]
-    AUTH["Auth / OTP / JWT / RBAC"]
-    SALON["Salons / Users"]
-    BARBER["Barbers / Services / BarberServices"]
-    SCHEDULE["Schedules / Availability"]
-    APPT["Appointments"]
-    PRISMA["Prisma ORM"]
-    DB[("PostgreSQL")]
-    REDIS[("Redis")]
-    SMS["ارائه‌دهنده پیامک"]
-
-    USER --> WEB
-    WEB -->|"درخواست API"| NGINX
-    NGINX -->|"فایل‌های پنل"| WEB
-    NGINX -->|"/api/*"| API
-
-    API --> AUTH
-    API --> SALON
-    API --> BARBER
-    API --> SCHEDULE
-    API --> APPT
-
-    AUTH --> PRISMA
-    SALON --> PRISMA
-    BARBER --> PRISMA
-    SCHEDULE --> PRISMA
-    APPT --> PRISMA
-    PRISMA --> DB
-
-    AUTH --> REDIS
-    API --> REDIS
-    AUTH --> SMS
+    BROWSER["مرورگر / React + Vite PWA"] --> NGINX["Nginx: فایل‌های وب و /api"]
+    BROWSER <--> SW["Service Worker: precache عمومی و Web Push"]
+    NGINX --> API["NestJS REST API"]
+    CONFIG["اعتبارسنجی startup: env و SMS provider"] --> API
+    API --> AUTH["Auth / OTP / RBAC"]
+    API --> TENANT["Salons / Users / Profiles / Memberships"]
+    API --> CATALOG["Barbers / Services / Schedules"]
+    API --> BOOKING["Availability / Appointments"]
+    API --> REPORTS["Revenue Reports / Excel Export"]
+    API --> NOTIFY["Push subscriptions / appointment notifications"]
+    AUTH --> PRISMA["Prisma ORM"]
+    TENANT --> PRISMA
+    CATALOG --> PRISMA
+    BOOKING --> PRISMA
+    REPORTS --> PRISMA
+    NOTIFY --> PRISMA
+    PRISMA --> PG[("PostgreSQL")]
+    AUTH --> REDIS[("Redis: rate limits")]
+    AUTH --> SMSROUTE{"درخواست دارای salonSlug است؟"}
+    SMSROUTE -->|بله| TENANTSMS["تنظیمات رمزگذاری‌شده کاوه‌نگار سالن"]
+    SMSROUTE -->|خیر و فقط SUPER_ADMIN| SMSADAPTER["provider مرکزی پلتفرم"]
+    TENANTSMS --> SMS["Kavenegar Verify Lookup"]
+    SMSADAPTER -.-> SMS
+    NOTIFY --> PUSH["Browser Push Service با VAPID"]
+    PUSH --> SW
 ```
 
-### مسئولیت اجزا
+| جزء                 | وظیفه                                                 |
+| ------------------- | ----------------------------------------------------- |
+| React + Vite        | رابط کاربری و پنل                                     |
+| Nginx               | ارائه وب و reverse proxy مسیر `/api`                  |
+| NestJS              | اعتبارسنجی، مجوزها و منطق کسب‌وکار                    |
+| Prisma + PostgreSQL | داده‌های پایدار کاربران، سالن‌ها، برنامه‌ها و نوبت‌ها |
+| Redis               | داده‌های موقت و محدودسازی درخواست‌ها                  |
+| SMS                 | ارسال OTP در صورت پیکربندی ارائه‌دهنده                |
 
-| جزء | مسئولیت |
-| --- | --- |
-| React + Vite | رابط کاربری و پنل مدیریت |
-| Nginx | سرو فایل‌های فرانت‌اند و هدایت درخواست‌های `/api` به NestJS |
-| NestJS | API، اعتبارسنجی ورودی‌ها، مجوزها و قوانین کسب‌وکار |
-| Auth / OTP | ورود با شماره تلفن، تأیید OTP و چرخه توکن‌ها |
-| Salons / Users | مدیریت کاربران، سالن‌ها و عضویت مدیران |
-| Barbers / Services | مدیریت آرایشگران، خدمات و انتساب خدمات به آرایشگر |
-| Schedules | ساعات کاری و روزهای تعطیل |
-| Availability | محاسبه بازه‌های زمانی قابل رزرو |
-| Appointments | ایجاد، مشاهده، لغو و تغییر وضعیت نوبت |
-| Prisma + PostgreSQL | دسترسی به داده‌ها و نگهداری پایدار اطلاعات |
-| Redis | عملیات موقت مانند محدودسازی نرخ درخواست و کش |
-| SMS Provider | ارسال کد OTP در محیطی که ارائه‌دهنده پیامک تنظیم شده باشد |
+API پیش از پذیرش ترافیک، تنظیمات SMS و کلید اصلی رمزگذاری را اعتبارسنجی
+می‌کند. `mock` فقط در `development` و `test` مجاز است. هر سالن حساب کاوه‌نگار
+خود را از پنل ادمین تنظیم می‌کند؛ API key با AES-256-GCM رمزگذاری می‌شود و در
+پاسخ API برگردانده نمی‌شود. provider مرکزی فقط برای ورود `SUPER_ADMIN` بدون
+لینک سالن و ورود اولیه ادمین فعال سالنی که هنوز credential ندارد استفاده
+می‌شود؛ fallback ادمین پس از ثبت تنظیمات همان سالن دیگر انتخاب نمی‌شود.
 
-## ۲. جریان رزرو نوبت
+## ۲. مسیر رزرو و کنترل هم‌زمانی
 
 ```mermaid
 flowchart TD
-    START["انتخاب سالن، آرایشگر، خدمت و زمان"]
-    AUTH["احراز هویت و بررسی نقش"]
-    CUSTOMER["شناسایی پروفایل مشتری"]
-    INPUT["اعتبارسنجی ورودی‌ها و موجودیت‌ها"]
-    SAME{"آرایشگر و خدمت متعلق به همان سالن‌اند؟"}
-    ASSIGNED{"خدمت به این آرایشگر تخصیص یافته؟"}
-    HOURS["بررسی منطقه زمانی، ساعات کاری و روز تعطیل"]
-    DURATION["محاسبه بازه با مدت خدمت"]
-    OVERLAP{"تداخل با نوبت فعال وجود دارد؟"}
-    CREATE["ثبت نوبت در PostgreSQL"]
-    SUCCESS["بازگرداندن نوبت ثبت‌شده"]
-    INVALID["خطای اعتبارسنجی یا دسترسی"]
-    CONFLICT["زمان دیگر در دسترس نیست"]
-
-    START --> AUTH --> CUSTOMER --> INPUT --> SAME
-    SAME -->|خیر| INVALID
-    SAME -->|بله| ASSIGNED
-    ASSIGNED -->|خیر| INVALID
-    ASSIGNED -->|بله| HOURS
-    HOURS -->|نامعتبر| INVALID
-    HOURS -->|معتبر| DURATION --> OVERLAP
-    OVERLAP -->|بله| CONFLICT
-    OVERLAP -->|خیر| CREATE
-    CREATE -->|قید دیتابیس، در صورت تداخل هم‌زمان| CONFLICT
-    CREATE --> SUCCESS
+    A["انتخاب سالن، آرایشگر، خدمت و زمان"] --> B["احراز هویت و اعتبارسنجی درخواست"]
+    B --> C{"آرایشگر و خدمت متعلق به سالن و به هم منتسب‌اند؟"}
+    C -->|خیر| E["خطای دسترسی / اعتبارسنجی"]
+    C -->|بله| D["بررسی ساعات کاری، مرخصی و مدت خدمت"]
+    D --> F{"زمان معتبر و بدون تداخل است؟"}
+    F -->|خیر| G["انتخاب زمان دیگر"]
+    F -->|بله| H["ایجاد نوبت با کنترل هم‌زمانی در دیتابیس"]
+    H -->|تداخل هم‌زمان| G
+    H -->|موفق| I["بازگرداندن نوبت ثبت‌شده"]
 ```
 
-**نکته هم‌زمانی:** زمان‌های آزاد که به کاربر نمایش داده می‌شوند تضمین رزرو نیستند؛ ممکن است کاربر دیگری همان زمان را زودتر رزرو کند. بنابراین اعتبارسنجی باید هنگام ایجاد نوبت تکرار شود و قید دیتابیس نیز آخرین لایه جلوگیری از رزروهای متداخل است.
+زمان نمایش‌داده‌شده تضمین رزرو نیست؛ هنگام ثبت، تداخل مجدداً بررسی می‌شود.
 
-## ۳. جریان ورود با OTP
+## ۳. ورود با OTP
 
 ```mermaid
 flowchart TD
-    USER["ورود شماره تلفن"]
-    REQUEST["درخواست ارسال OTP"]
-    LIMIT["کنترل نرخ درخواست"]
-    GENERATE["تولید OTP و هش کد"]
-    STORE["ذخیره کد، زمان انقضا و تعداد تلاش"]
-    SMS["ارسال پیامک"]
-    VERIFY["درخواست تأیید OTP"]
-    CHECK{"کد معتبر، منقضی‌نشده و استفاده‌نشده است؟"}
-    CONSUME["مصرف کد به شکل امن"]
-    ACCOUNT["یافتن یا ایجاد کاربر"]
-    ACTIVE{"حساب مجاز به ورود است؟"}
-    TOKEN["صدور Access و Refresh Token"]
-    DONE["پاسخ موفق ورود"]
-    ERROR["پاسخ خطا"]
-
-    USER --> REQUEST --> LIMIT
-    LIMIT -->|محدود شده| ERROR
-    LIMIT -->|مجاز| GENERATE --> STORE --> SMS
-    SMS -->|خطای ارسال| ERROR
-    SMS -->|ارسال موفق| VERIFY --> CHECK
-    CHECK -->|خیر| ERROR
-    CHECK -->|بله| CONSUME --> ACCOUNT --> ACTIVE
-    ACTIVE -->|خیر| ERROR
-    ACTIVE -->|بله| TOKEN --> DONE
+    PHONE["شماره موبایل + salonSlug لینک سالن"] --> LIMIT["کنترل نرخ درخواست"]
+    LIMIT -->|محدود| ERROR["خطا"]
+    LIMIT -->|مجاز| ROUTE{"سالن یا ورود مدیرکل؟"}
+    ROUTE -->|سالن| TENANT["بازکردن امن credential همان سالن"]
+    ROUTE -->|مدیرکل| PLATFORM["credential مرکزی"]
+    TENANT --> CODE["تولید OTP با scope سالن"]
+    PLATFORM --> CODE
+    CODE --> SEND["ارسال از طریق ارائه‌دهنده تنظیم‌شده"]
+    SEND -->|خطا| INVALIDATE["ابطال OTP تحویل‌نشده و پاسخ 503"]
+    SEND -->|موفق| VERIFY["دریافت و بررسی کد"]
+    VERIFY -->|نامعتبر / منقضی| ERROR
+    VERIFY -->|معتبر| USER["یافتن یا ایجاد حساب و بررسی وضعیت"]
+    USER -->|غیرمجاز| ERROR
+    USER -->|مجاز| TOKEN["صدور نشست و توکن‌ها"]
 ```
 
-این نمودار جریان مفهومی OTP را نشان می‌دهد. جزئیات دقیق ذخیره‌سازی، تعداد تلاش‌ها، انقضا و ابطال توکن باید با پیاده‌سازی جاری ماژول‌های `otp` و `auth` تطبیق داده شود.
+### ۳.۱. تکمیل پروفایل شخصی
 
-## ۴. چرخه وضعیت نوبت
+```mermaid
+flowchart LR
+    USER["کاربر واردشده با هر نقش"] --> PAGE["صفحه /profile"]
+    PAGE --> READ["GET /api/users/:id برای شناسه خود کاربر"]
+    READ --> FORM["نام، نام خانوادگی و تاریخ تولد شمسی"]
+    FORM --> CONVERT["تبدیل تاریخ شمسی به YYYY-MM-DD"]
+    CONVERT --> UPDATE["PATCH /api/users/:id"]
+    UPDATE --> AUTHZ{"مالک پروفایل یا مدیر مجاز؟"}
+    AUTHZ -->|خیر| DENY["403"]
+    AUTHZ -->|بله| DB[("ذخیره پروفایل در User")]
+    DB --> SESSION["به‌روزرسانی نام نمایشی نشست"]
+```
+
+تاریخ تولد در دیتابیس به‌صورت `DATE` ذخیره می‌شود و زمان یا منطقه زمانی ندارد.
+فرانت‌اند آن را به تقویم شمسی نمایش می‌دهد، اما API مقدار استاندارد
+`YYYY-MM-DD` دریافت می‌کند. کاربر عادی فقط پروفایل خودش را می‌خواند و ویرایش
+می‌کند؛ قواعد دسترسی مدیران همان محدوده فعال سالن را اعمال می‌کند.
+
+## ۴. وضعیت‌های نوبت
 
 ```mermaid
 stateDiagram-v2
-    [*] --> PENDING: ایجاد نوبت
-    PENDING --> CONFIRMED: تأیید
+    [*] --> PENDING: ایجاد
+    PENDING --> CONFIRMED: تایید
     PENDING --> CANCELLED: لغو
     CONFIRMED --> CANCELLED: لغو
     CONFIRMED --> COMPLETED: انجام خدمت
-    CONFIRMED --> NO_SHOW: عدم حضور مشتری
-    CANCELLED --> [*]
-    COMPLETED --> [*]
-    NO_SHOW --> [*]
+    CONFIRMED --> NO_SHOW: عدم حضور
 ```
 
-قواعد انتقال وضعیت و اینکه کدام نقش مجاز به هر انتقال است باید از سرویس نوبت‌ها و گاردهای دسترسی پیروی کند.
+این نمودار چرخه مفهومی است؛ انتقال‌های واقعی و نقش‌های مجاز باید با `src/appointments` تطبیق داده شوند.
 
-## ۵. مسیرهای مهم برای مطالعه کد
+## ۵. گزارش درآمد مدیر
 
-- `apps/web`: برنامه فرانت‌اند React + Vite.
-- `src/main.ts`: پیکربندی و راه‌اندازی NestJS و پیشوند API.
-- `src/auth` و `src/otp`: ورود، توکن‌ها و تأیید شماره تلفن.
-- `src/salons`, `src/barbers`, `src/services`, `src/barber-services`: اطلاعات سالن و خدمات.
-- `src/schedules` و `src/availability`: برنامه کاری و زمان‌های آزاد.
-- `src/appointments`: منطق رزرو و تغییر وضعیت نوبت.
-- `src/prisma` و `prisma/schema.prisma`: دسترسی به دیتابیس و مدل داده.
-- `src/redis`: اتصال و عملیات Redis.
-- `docker-compose.yml`, `Dockerfile`, `deploy/nginx/default.conf`: اجرای کانتینری و مسیریابی درخواست‌ها.
+```mermaid
+flowchart LR
+    ADMIN["ADMIN / SUPER_ADMIN"] --> SELECT["انتخاب سالن و بازه ماهانه یا سالانه"]
+    SELECT --> ACCESS{"دسترسی فعال به سالن؟"}
+    ACCESS -->|خیر| DENY["403"]
+    ACCESS -->|بله| COMPLETED["نوبت‌های COMPLETED در منطقه زمانی سالن"]
+    COMPLETED --> TOTAL["درآمد کل، میانگین و سهم هر آرایشگر"]
+    COMPLETED --> DETAIL["ریز نوبت‌های درآمدزا"]
+    TOTAL --> PANEL["نمایش در پنل"]
+    DETAIL --> XLSX["خروجی XLSX: خلاصه و ریز درآمد"]
+```
 
-## ۶. ملاحظات عملیاتی
+مبنای درآمد، مبلغ snapshot ذخیره‌شده روی نوبت تکمیل‌شده است؛ تغییر بعدی قیمت
+خدمت، گزارش تاریخی را تغییر نمی‌دهد. نوبت‌های در انتظار، تأییدشده، لغوشده و
+عدم مراجعه درآمد محسوب نمی‌شوند. مدیر عادی فقط گزارش سالن دارای عضویت فعال خود
+را می‌بیند و مدیرکل می‌تواند سالن موردنظر را انتخاب کند.
 
-- مسیرهای API با پیشوند `/api` ارائه می‌شوند.
-- مجوز نقش و محدوده دسترسی به سالن باید در سمت سرور بررسی شود؛ پنهان کردن گزینه‌ها در UI به‌تنهایی کنترل دسترسی نیست.
-- تنظیم منطقه زمانی سالن در محاسبه زمان‌های کاری و نوبت‌ها اهمیت دارد.
-- در Production، برای ارسال OTP باید ارائه‌دهنده پیامک و متغیرهای دسترسی آن پیکربندی شوند.
-- دسترسی عمومی Production باید با HTTPS محافظت شود؛ استفاده از IP و HTTP فقط برای توسعه یا تست محدود مناسب است.
+## ۶. PWA و اعلان نوبت
+
+```mermaid
+sequenceDiagram
+    participant U as کاربر
+    participant PWA as پنل و Service Worker
+    participant API as Notifications API
+    participant DB as PostgreSQL
+    participant PUSH as Push Service مرورگر
+    U->>PWA: کلیک روی فعال‌کردن اعلان
+    PWA->>PWA: درخواست مجوز و ساخت subscription
+    PWA->>API: ثبت endpoint و کلیدهای عمومی subscription
+    API->>DB: اتصال subscription به userId
+    API->>PUSH: رویداد ثبت یا تغییر وضعیت نوبت با VAPID
+    PUSH-->>PWA: push حتی در زمان بسته‌بودن پنل
+    PWA-->>U: نمایش اعلان و بازکردن مسیر امن پنل
+```
+
+مجوز اعلان فقط با اقدام صریح کاربر درخواست می‌شود. کلید خصوصی VAPID در سرور
+می‌ماند و endpoint منقضی‌شده حذف می‌شود. Service Worker پاسخ‌های `/api` را
+precache نمی‌کند.
+
+## ۷. نقشه کد و نگهداری سند
+
+- `apps/web`: پنل وب
+- `src/auth`, `src/otp`: ورود، نشست و SMS provider (راهنما: `docs/sms.md`)
+- `src/salons`, `src/users`: مدیریت سالن و اعضا
+- `src/barbers`, `src/services`, `src/barber-services`: آرایشگران و خدمات
+- `src/schedules`, `src/availability`: برنامه کاری و زمان آزاد
+- `src/appointments`: رزرو و وضعیت نوبت
+- `src/reports`: گزارش درآمد سالن و ساخت فایل Excel
+- `src/notifications`: subscriptionها و ارسال Web Push
+- `prisma/schema.prisma`: مدل داده
+- `docker-compose.yml`, `deploy/nginx`: زیرساخت استقرار
+
+**قاعده نگهداری:** هر تغییر در نقش‌ها، API، فرایند رزرو، OTP، ساختار داده یا استقرار باید هم‌زمان در نمودار مرتبط و توضیحات این فایل بازتاب یابد. این کار با دستورالعمل `AGENTS.md` به فرایند توسعه اضافه شده و به‌صورت خودکار در پس‌زمینه اجرا نمی‌شود.

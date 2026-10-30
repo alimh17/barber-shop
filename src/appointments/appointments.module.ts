@@ -3,12 +3,13 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module.js';
 import { AvailabilityModule } from '../availability/availability.module.js';
 import { SalonsModule } from '../salons/salons.module.js';
+import { NotificationsModule } from '../notifications/notifications.module.js';
 
 import { AppointmentsController } from './appointments.controller.js';
 import { AppointmentsService } from './appointments.service.js';
 
 @Module({
-  imports: [AuthModule, AvailabilityModule, SalonsModule],
+  imports: [AuthModule, AvailabilityModule, SalonsModule, NotificationsModule],
   controllers: [AppointmentsController],
   providers: [AppointmentsService],
   exports: [AppointmentsService],

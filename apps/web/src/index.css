@@ -1,2 +1,98 @@
-@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap');
-:root{font-family:'Vazirmatn',Tahoma,sans-serif;color:#17221c;background:#f6f8f6;font-synthesis:none;text-rendering:optimizeLegibility;direction:rtl;--green:#235c46;--green-dark:#153d2f;--mint:#e9f3ed;--line:#e2e8e4;--muted:#718078}*{box-sizing:border-box}html{direction:rtl}body{margin:0;min-width:320px;min-height:100vh}button,input{font:inherit}button,a{transition:.2s ease}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.6}a{color:inherit;text-decoration:none}h1,h2,p{margin-top:0}#root{min-height:100vh}
+@font-face {
+  font-family: 'Modam';
+  src:
+    url('/fonts/Modam/woff2/ModamFaNumWeb-Regular.woff2') format('woff2'),
+    url('/fonts/Modam/woff/ModamFaNumWeb-Regular.woff') format('woff');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Modam';
+  src:
+    url('/fonts/Modam/woff2/ModamFaNumWeb-Medium.woff2') format('woff2'),
+    url('/fonts/Modam/woff/ModamFaNumWeb-Medium.woff') format('woff');
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Modam';
+  src:
+    url('/fonts/Modam/woff2/ModamFaNumWeb-SemiBold.woff2') format('woff2'),
+    url('/fonts/Modam/woff/ModamFaNumWeb-SemiBold.woff') format('woff');
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Modam';
+  src:
+    url('/fonts/Modam/woff2/ModamFaNumWeb-Bold.woff2') format('woff2'),
+    url('/fonts/Modam/woff/ModamFaNumWeb-Bold.woff') format('woff');
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Modam';
+  src:
+    url('/fonts/Modam/woff2/ModamFaNumWeb-ExtraBold.woff2') format('woff2'),
+    url('/fonts/Modam/woff/ModamFaNumWeb-ExtraBold.woff') format('woff');
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+}
+:root {
+  font-family: 'Modam', Tahoma, sans-serif;
+  color: #17221c;
+  background: #f6f8f6;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  direction: rtl;
+  --green: #235c46;
+  --green-dark: #153d2f;
+  --mint: #e9f3ed;
+  --line: #e2e8e4;
+  --muted: #718078;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  direction: rtl;
+}
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button,
+a {
+  transition: 0.2s ease;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+#root {
+  min-height: 100vh;
+}
