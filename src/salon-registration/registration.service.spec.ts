@@ -11,7 +11,7 @@ describe('Salon registration approval', () => {
  it('prevents a second pending request', async () => {
   const tx = {
    user: {findUnique:vi.fn().mockResolvedValue({role:'CUSTOMER',status:'ACTIVE',salonMemberships:[]})},
-   $executeRawUnsafe:vi.fn(),
+   $queryRawUnsafe:vi.fn(),
    salonRegistrationRequest:{findFirst:vi.fn().mockResolvedValue({id:'pending'})}
   };
   const service = new RegistrationService({$transaction:(fn:(tx:typeof tx)=>unknown)=>fn(tx)} as never);
@@ -20,7 +20,7 @@ describe('Salon registration approval', () => {
  it('rejects double approval before creating another salon', async () => {
   const tx = {
    salonRegistrationRequest:{findUnique:vi.fn().mockResolvedValueOnce({id:'req',applicantId:'user',slug:'salon'}).mockResolvedValueOnce({id:'req',status:'APPROVED'})},
-   $executeRawUnsafe:vi.fn(),
+   $queryRawUnsafe:vi.fn(),
    salon:{create:vi.fn()}
   };
   const service = new RegistrationService({$transaction:(fn:(tx:typeof tx)=>unknown)=>fn(tx)} as never);
@@ -33,7 +33,7 @@ describe('Salon registration approval', () => {
     findUnique:vi.fn().mockResolvedValueOnce({id:'req',applicantId:'user',slug:'my-salon'}).mockResolvedValueOnce({id:'req',applicantId:'user',slug:'my-salon',name:'My salon',status:'PENDING'}),
     update:vi.fn().mockResolvedValue({id:'req',status:'APPROVED'})
    },
-   $executeRawUnsafe:vi.fn(),
+   $queryRawUnsafe:vi.fn(),
    user:{findUnique:vi.fn().mockResolvedValue({id:'user',role:'CUSTOMER',status:'ACTIVE',salonMemberships:[]}),update:vi.fn()},
    salon:{findUnique:vi.fn().mockResolvedValue(null),create:vi.fn().mockResolvedValue({id:'salon-id'})},
    salonMembership:{create:vi.fn()}
