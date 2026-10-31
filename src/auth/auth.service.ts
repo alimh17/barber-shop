@@ -29,7 +29,15 @@ export class AuthService {
     let allowPlatformBootstrap = false;
     if (!dto.salonSlug) {
       const platformUser = await this.usersService.findByPhone(dto.phone);
-      if (platformUser?.role !== UserRole.SUPER_ADMIN && dto.purpose !== 'salon-registration') {
+      if (
+        dto.purpose !== 'salon-registration' &&
+        platformUser?.role !== UserRole.SUPER_ADMIN &&
+        !(
+          platformUser?.role === UserRole.ADMIN &&
+          platformUser.status === 'ACTIVE' &&
+          (await this.usersService.hasActiveSalonMembership(platformUser.id))
+        )
+      ) {
         throw new BadRequestException('Salon invitation link is required');
       }
     } else {

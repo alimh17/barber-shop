@@ -54,6 +54,14 @@ describe('Salon self registration (isolated PostgreSQL, real HTTP + OTP)',()=>{
   expect(await db.user.findUnique({where:{phone}})).toMatchObject({role:'ADMIN'});
   expect(await db.salonMembership.findFirst({where:{salonId,user:{phone}}})).toBeTruthy();
  });
+ it('allows approved salon admin to log in without invitation',async()=>{
+  const otp=await api().post('/api/auth/request-otp').send({phone});
+  expect(otp.status).toBe(201);
+  const verified=await api().post('/api/auth/verify-otp').send({phone,code:otp.body.otp});
+  expect(verified.status).toBe(201);
+  expect(verified.body.user.role).toBe('ADMIN');
+  expect(verified.body.user.hasSalonMembership).toBe(true);
+ });
  it('prevents double approval and duplicate ownership',async()=>{
   const r=await api().post('/api/salon-registrations/'+reqId+'/approve').set('Authorization','Bearer '+adminToken);
   expect(r.status).toBe(409);
