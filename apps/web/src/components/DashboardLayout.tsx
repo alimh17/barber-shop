@@ -60,7 +60,8 @@ export function DashboardLayout() {
       ? [{ to: '/my-revenue', label: 'درآمد من', icon: ChartNoAxesCombined }, { to: '/appointments', label: 'درخواست‌های نوبت', icon: CalendarDays }]
       : []),
     ...(user.role === 'SUPER_ADMIN'
-      ? [{ to: '/salons/new', label: 'سالن جدید', icon: Building2 }]
+      ? [{ to: '/salon-registrations', label: '\u062f\u0631\u062e\u0648\u0627\u0633\u062a\u200c\u0647\u0627\u06cc \u0633\u0627\u0644\u0646', icon: Building2 },
+          { to: '/salons/new', label: 'سالن جدید', icon: Building2 }]
       : []),
     ...(isAdmin
       ? [
