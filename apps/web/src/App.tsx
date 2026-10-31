@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes, useParams } from 'react-router-dom';
+import { useAuth } from './auth/auth-context';
 import { AuthProvider } from './auth/AuthContext';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { DashboardLayout } from './components/DashboardLayout';
@@ -30,6 +31,14 @@ function SalonEntry() {
   return (
     <Navigate to={`/login?salon=${encodeURIComponent(slug ?? '')}`} replace />
   );
+}
+
+function BookingRoute() {
+  const { session } = useAuth();
+  if (session?.user.role === 'CUSTOMER' && session.user.hasSalonMembership === false) {
+    return <Navigate to="/register-salon" replace />;
+  }
+  return <CustomerBookingPage />;
 }
 
 function App() {
@@ -84,7 +93,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="/book" element={<CustomerBookingPage />} />
+            <Route path="/book" element={<BookingRoute />} />
             <Route
               path="/appointments/new"
               element={

@@ -106,10 +106,13 @@ export class AuthService {
     const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
     await this.usersService.updateRefreshToken(user.id, refreshTokenHash);
 
+    const hasSalonMembership = await this.usersService.hasActiveSalonMembership(user.id);
+
     return {
       accessToken,
       refreshToken,
       user: {
+        hasSalonMembership,
         id: user.id,
         phone: user.phone,
         role: user.role,

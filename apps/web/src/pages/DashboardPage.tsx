@@ -35,6 +35,7 @@ export function DashboardPage() {
   const { session } = useAuth();
   const firstName =
     session?.user.fullName?.trim().split(/\s+/)[0] || 'دوست عزیز';
+  const isSalonApplicant = session?.user.role === 'CUSTOMER' && session.user.hasSalonMembership === false;
   const canCreateSalon = session?.user.role === 'SUPER_ADMIN';
   const canManageSalon = ['SUPER_ADMIN', 'ADMIN'].includes(
     session?.user.role ?? '',
@@ -163,7 +164,7 @@ export function DashboardPage() {
         )}
       </section>
 
-      <SalonBarbersPanel />
+      {!isSalonApplicant && <SalonBarbersPanel />}
 
       {canManageSalon ? (
         <section className="dashboard-grid">

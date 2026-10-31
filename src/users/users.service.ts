@@ -78,6 +78,14 @@ export class UsersService {
     return Boolean(admin);
   }
 
+  async hasActiveSalonMembership(userId: string): Promise<boolean> {
+    const membership = await this.prisma.salonMembership.findFirst({
+      where: { userId, isActive: true },
+      select: { id: true },
+    });
+    return Boolean(membership);
+  }
+
   async createRegistrationApplicant(phone: string): Promise<User> {
     return this.prisma.user.create({ data: { phone, role: UserRole.CUSTOMER, status: UserStatus.ACTIVE } });
   }

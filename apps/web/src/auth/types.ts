@@ -3,6 +3,7 @@ export interface User {
   id: string;
   phone: string;
   role: UserRole;
+  hasSalonMembership?: boolean;
   firstName?: string | null;
   lastName?: string | null;
   birthDate?: string | null;
