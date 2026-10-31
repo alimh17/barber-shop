@@ -78,7 +78,7 @@ export function LoginPage() {
       await signIn(phone, code, salonSlug, purpose);
       const from = (location.state as { from?: { pathname?: string } } | null)
         ?.from?.pathname;
-      navigate(from ?? (purpose ? '/register-salon' : '/dashboard'), { replace: true });
+      navigate(purpose ? '/register-salon' : (from ?? '/dashboard'), { replace: true });
     } catch (error) {
       otpForm.setError('code', {
         message: getApiErrorMessage(error, 'کد واردشده صحیح نیست'),

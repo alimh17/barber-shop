@@ -51,6 +51,7 @@ export function DashboardLayout() {
           },
         ]
       : []),
+    ...(user.role === 'CUSTOMER' ? [{ to: '/register-salon', label: "??? ???? ????", icon: Building2 }] : []),
     ...(user.role === 'CUSTOMER'
       ? [{ to: '/book', label: 'رزرو نوبت', icon: CalendarDays }]
       : []),

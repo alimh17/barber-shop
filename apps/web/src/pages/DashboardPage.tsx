@@ -156,6 +156,8 @@ export function DashboardPage() {
               ایجاد آرایشگر <UserRoundPlus />
             </Link>
           </div>
+        ) : session?.user.role === 'CUSTOMER' ? (
+          <Link className="create-salon-link" to="/register-salon"><Building2 size={18} />{"??? ???? ????"}</Link>
         ) : (
           <span className="access-label">نیازمند دسترسی مدیر مجموعه</span>
         )}
