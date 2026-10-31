@@ -35,7 +35,7 @@ function SalonEntry() {
 
 function BookingRoute() {
   const { session } = useAuth();
-  if (session?.user.role === 'CUSTOMER' && session.user.hasSalonMembership === false) {
+  if (session?.user.role === 'CUSTOMER' && session.user.hasSalonMembership !== true) {
     return <Navigate to="/register-salon" replace />;
   }
   return <CustomerBookingPage />;

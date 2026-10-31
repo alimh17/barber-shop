@@ -36,7 +36,7 @@ export function DashboardLayout() {
     [user.firstName, user.lastName].filter(Boolean).join(' ') ||
     user.phone;
   const isAdmin = ['SUPER_ADMIN', 'ADMIN'].includes(user.role);
-  const isSalonApplicant = user.role === 'CUSTOMER' && user.hasSalonMembership === false;
+  const isSalonApplicant = user.role === 'CUSTOMER' && user.hasSalonMembership !== true;
   const links = [
     { to: '/dashboard', label: 'نمای کلی', icon: LayoutDashboard },
     { to: '/profile', label: 'پروفایل من', icon: UserRound },
@@ -52,7 +52,7 @@ export function DashboardLayout() {
           },
         ]
       : []),
-    ...(user.role === 'CUSTOMER' ? [{ to: '/register-salon', label: "??? ???? ????", icon: Building2 }] : []),
+    ...(user.role === 'CUSTOMER' ? [{ to: '/register-salon', label: "\u062b\u0628\u062a \u0633\u0627\u0644\u0646 \u062c\u062f\u06cc\u062f", icon: Building2 }] : []),
     ...(user.role === 'CUSTOMER' && !isSalonApplicant
       ? [{ to: '/book', label: 'رزرو نوبت', icon: CalendarDays }]
       : []),

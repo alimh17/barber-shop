@@ -35,7 +35,7 @@ export function DashboardPage() {
   const { session } = useAuth();
   const firstName =
     session?.user.fullName?.trim().split(/\s+/)[0] || 'دوست عزیز';
-  const isSalonApplicant = session?.user.role === 'CUSTOMER' && session.user.hasSalonMembership === false;
+  const isSalonApplicant = session?.user.role === 'CUSTOMER' && session.user.hasSalonMembership !== true;
   const canCreateSalon = session?.user.role === 'SUPER_ADMIN';
   const canManageSalon = ['SUPER_ADMIN', 'ADMIN'].includes(
     session?.user.role ?? '',
@@ -158,7 +158,7 @@ export function DashboardPage() {
             </Link>
           </div>
         ) : session?.user.role === 'CUSTOMER' ? (
-          <Link className="create-salon-link" to="/register-salon"><Building2 size={18} />{"??? ???? ????"}</Link>
+          <Link className="create-salon-link" to="/register-salon"><Building2 size={18} />{"\u062b\u0628\u062a \u0633\u0627\u0644\u0646 \u062c\u062f\u06cc\u062f"}</Link>
         ) : (
           <span className="access-label">نیازمند دسترسی مدیر مجموعه</span>
         )}
