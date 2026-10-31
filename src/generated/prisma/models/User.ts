@@ -222,6 +222,8 @@ export type UserWhereInput = {
   status?: Prisma.EnumUserStatusFilter<"User"> | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestListRelationFilter
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestListRelationFilter
   customer?: Prisma.XOR<Prisma.CustomerNullableScalarRelationFilter, Prisma.CustomerWhereInput> | null
   barber?: Prisma.XOR<Prisma.BarberNullableScalarRelationFilter, Prisma.BarberWhereInput> | null
   salonMemberships?: Prisma.SalonMembershipListRelationFilter
@@ -239,6 +241,8 @@ export type UserOrderByWithRelationInput = {
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  registrationRequests?: Prisma.SalonRegistrationRequestOrderByRelationAggregateInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestOrderByRelationAggregateInput
   customer?: Prisma.CustomerOrderByWithRelationInput
   barber?: Prisma.BarberOrderByWithRelationInput
   salonMemberships?: Prisma.SalonMembershipOrderByRelationAggregateInput
@@ -259,6 +263,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   status?: Prisma.EnumUserStatusFilter<"User"> | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestListRelationFilter
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestListRelationFilter
   customer?: Prisma.XOR<Prisma.CustomerNullableScalarRelationFilter, Prisma.CustomerWhereInput> | null
   barber?: Prisma.XOR<Prisma.BarberNullableScalarRelationFilter, Prisma.BarberWhereInput> | null
   salonMemberships?: Prisma.SalonMembershipListRelationFilter
@@ -308,6 +314,8 @@ export type UserCreateInput = {
   status?: $Enums.UserStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestCreateNestedManyWithoutApplicantInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestCreateNestedManyWithoutReviewedByInput
   customer?: Prisma.CustomerCreateNestedOneWithoutUserInput
   barber?: Prisma.BarberCreateNestedOneWithoutUserInput
   salonMemberships?: Prisma.SalonMembershipCreateNestedManyWithoutUserInput
@@ -325,6 +333,8 @@ export type UserUncheckedCreateInput = {
   status?: $Enums.UserStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestUncheckedCreateNestedManyWithoutApplicantInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestUncheckedCreateNestedManyWithoutReviewedByInput
   customer?: Prisma.CustomerUncheckedCreateNestedOneWithoutUserInput
   barber?: Prisma.BarberUncheckedCreateNestedOneWithoutUserInput
   salonMemberships?: Prisma.SalonMembershipUncheckedCreateNestedManyWithoutUserInput
@@ -342,6 +352,8 @@ export type UserUpdateInput = {
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestUpdateManyWithoutApplicantNestedInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestUpdateManyWithoutReviewedByNestedInput
   customer?: Prisma.CustomerUpdateOneWithoutUserNestedInput
   barber?: Prisma.BarberUpdateOneWithoutUserNestedInput
   salonMemberships?: Prisma.SalonMembershipUpdateManyWithoutUserNestedInput
@@ -359,6 +371,8 @@ export type UserUncheckedUpdateInput = {
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestUncheckedUpdateManyWithoutApplicantNestedInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestUncheckedUpdateManyWithoutReviewedByNestedInput
   customer?: Prisma.CustomerUncheckedUpdateOneWithoutUserNestedInput
   barber?: Prisma.BarberUncheckedUpdateOneWithoutUserNestedInput
   salonMemberships?: Prisma.SalonMembershipUncheckedUpdateManyWithoutUserNestedInput
@@ -448,6 +462,11 @@ export type UserScalarRelationFilter = {
   isNot?: Prisma.UserWhereInput
 }
 
+export type UserNullableScalarRelationFilter = {
+  is?: Prisma.UserWhereInput | null
+  isNot?: Prisma.UserWhereInput | null
+}
+
 export type StringFieldUpdateOperationsInput = {
   set?: string
 }
@@ -528,6 +547,36 @@ export type UserUpdateOneRequiredWithoutBarberNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutBarberInput, Prisma.UserUpdateWithoutBarberInput>, Prisma.UserUncheckedUpdateWithoutBarberInput>
 }
 
+export type UserCreateNestedOneWithoutRegistrationRequestsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutRegistrationRequestsInput, Prisma.UserUncheckedCreateWithoutRegistrationRequestsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutRegistrationRequestsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserCreateNestedOneWithoutReviewedRegistrationsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutReviewedRegistrationsInput, Prisma.UserUncheckedCreateWithoutReviewedRegistrationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutReviewedRegistrationsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutRegistrationRequestsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutRegistrationRequestsInput, Prisma.UserUncheckedCreateWithoutRegistrationRequestsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutRegistrationRequestsInput
+  upsert?: Prisma.UserUpsertWithoutRegistrationRequestsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutRegistrationRequestsInput, Prisma.UserUpdateWithoutRegistrationRequestsInput>, Prisma.UserUncheckedUpdateWithoutRegistrationRequestsInput>
+}
+
+export type UserUpdateOneWithoutReviewedRegistrationsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutReviewedRegistrationsInput, Prisma.UserUncheckedCreateWithoutReviewedRegistrationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutReviewedRegistrationsInput
+  upsert?: Prisma.UserUpsertWithoutReviewedRegistrationsInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutReviewedRegistrationsInput, Prisma.UserUpdateWithoutReviewedRegistrationsInput>, Prisma.UserUncheckedUpdateWithoutReviewedRegistrationsInput>
+}
+
 export type UserCreateWithoutPushSubscriptionsInput = {
   id?: string
   phone: string
@@ -539,6 +588,8 @@ export type UserCreateWithoutPushSubscriptionsInput = {
   status?: $Enums.UserStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestCreateNestedManyWithoutApplicantInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestCreateNestedManyWithoutReviewedByInput
   customer?: Prisma.CustomerCreateNestedOneWithoutUserInput
   barber?: Prisma.BarberCreateNestedOneWithoutUserInput
   salonMemberships?: Prisma.SalonMembershipCreateNestedManyWithoutUserInput
@@ -555,6 +606,8 @@ export type UserUncheckedCreateWithoutPushSubscriptionsInput = {
   status?: $Enums.UserStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestUncheckedCreateNestedManyWithoutApplicantInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestUncheckedCreateNestedManyWithoutReviewedByInput
   customer?: Prisma.CustomerUncheckedCreateNestedOneWithoutUserInput
   barber?: Prisma.BarberUncheckedCreateNestedOneWithoutUserInput
   salonMemberships?: Prisma.SalonMembershipUncheckedCreateNestedManyWithoutUserInput
@@ -587,6 +640,8 @@ export type UserUpdateWithoutPushSubscriptionsInput = {
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestUpdateManyWithoutApplicantNestedInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestUpdateManyWithoutReviewedByNestedInput
   customer?: Prisma.CustomerUpdateOneWithoutUserNestedInput
   barber?: Prisma.BarberUpdateOneWithoutUserNestedInput
   salonMemberships?: Prisma.SalonMembershipUpdateManyWithoutUserNestedInput
@@ -603,6 +658,8 @@ export type UserUncheckedUpdateWithoutPushSubscriptionsInput = {
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestUncheckedUpdateManyWithoutApplicantNestedInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestUncheckedUpdateManyWithoutReviewedByNestedInput
   customer?: Prisma.CustomerUncheckedUpdateOneWithoutUserNestedInput
   barber?: Prisma.BarberUncheckedUpdateOneWithoutUserNestedInput
   salonMemberships?: Prisma.SalonMembershipUncheckedUpdateManyWithoutUserNestedInput
@@ -619,6 +676,8 @@ export type UserCreateWithoutSalonMembershipsInput = {
   status?: $Enums.UserStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestCreateNestedManyWithoutApplicantInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestCreateNestedManyWithoutReviewedByInput
   customer?: Prisma.CustomerCreateNestedOneWithoutUserInput
   barber?: Prisma.BarberCreateNestedOneWithoutUserInput
   pushSubscriptions?: Prisma.PushSubscriptionCreateNestedManyWithoutUserInput
@@ -635,6 +694,8 @@ export type UserUncheckedCreateWithoutSalonMembershipsInput = {
   status?: $Enums.UserStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestUncheckedCreateNestedManyWithoutApplicantInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestUncheckedCreateNestedManyWithoutReviewedByInput
   customer?: Prisma.CustomerUncheckedCreateNestedOneWithoutUserInput
   barber?: Prisma.BarberUncheckedCreateNestedOneWithoutUserInput
   pushSubscriptions?: Prisma.PushSubscriptionUncheckedCreateNestedManyWithoutUserInput
@@ -667,6 +728,8 @@ export type UserUpdateWithoutSalonMembershipsInput = {
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestUpdateManyWithoutApplicantNestedInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestUpdateManyWithoutReviewedByNestedInput
   customer?: Prisma.CustomerUpdateOneWithoutUserNestedInput
   barber?: Prisma.BarberUpdateOneWithoutUserNestedInput
   pushSubscriptions?: Prisma.PushSubscriptionUpdateManyWithoutUserNestedInput
@@ -683,6 +746,8 @@ export type UserUncheckedUpdateWithoutSalonMembershipsInput = {
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestUncheckedUpdateManyWithoutApplicantNestedInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestUncheckedUpdateManyWithoutReviewedByNestedInput
   customer?: Prisma.CustomerUncheckedUpdateOneWithoutUserNestedInput
   barber?: Prisma.BarberUncheckedUpdateOneWithoutUserNestedInput
   pushSubscriptions?: Prisma.PushSubscriptionUncheckedUpdateManyWithoutUserNestedInput
@@ -699,6 +764,8 @@ export type UserCreateWithoutCustomerInput = {
   status?: $Enums.UserStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestCreateNestedManyWithoutApplicantInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestCreateNestedManyWithoutReviewedByInput
   barber?: Prisma.BarberCreateNestedOneWithoutUserInput
   salonMemberships?: Prisma.SalonMembershipCreateNestedManyWithoutUserInput
   pushSubscriptions?: Prisma.PushSubscriptionCreateNestedManyWithoutUserInput
@@ -715,6 +782,8 @@ export type UserUncheckedCreateWithoutCustomerInput = {
   status?: $Enums.UserStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestUncheckedCreateNestedManyWithoutApplicantInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestUncheckedCreateNestedManyWithoutReviewedByInput
   barber?: Prisma.BarberUncheckedCreateNestedOneWithoutUserInput
   salonMemberships?: Prisma.SalonMembershipUncheckedCreateNestedManyWithoutUserInput
   pushSubscriptions?: Prisma.PushSubscriptionUncheckedCreateNestedManyWithoutUserInput
@@ -747,6 +816,8 @@ export type UserUpdateWithoutCustomerInput = {
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestUpdateManyWithoutApplicantNestedInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestUpdateManyWithoutReviewedByNestedInput
   barber?: Prisma.BarberUpdateOneWithoutUserNestedInput
   salonMemberships?: Prisma.SalonMembershipUpdateManyWithoutUserNestedInput
   pushSubscriptions?: Prisma.PushSubscriptionUpdateManyWithoutUserNestedInput
@@ -763,6 +834,8 @@ export type UserUncheckedUpdateWithoutCustomerInput = {
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestUncheckedUpdateManyWithoutApplicantNestedInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestUncheckedUpdateManyWithoutReviewedByNestedInput
   barber?: Prisma.BarberUncheckedUpdateOneWithoutUserNestedInput
   salonMemberships?: Prisma.SalonMembershipUncheckedUpdateManyWithoutUserNestedInput
   pushSubscriptions?: Prisma.PushSubscriptionUncheckedUpdateManyWithoutUserNestedInput
@@ -779,6 +852,8 @@ export type UserCreateWithoutBarberInput = {
   status?: $Enums.UserStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestCreateNestedManyWithoutApplicantInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestCreateNestedManyWithoutReviewedByInput
   customer?: Prisma.CustomerCreateNestedOneWithoutUserInput
   salonMemberships?: Prisma.SalonMembershipCreateNestedManyWithoutUserInput
   pushSubscriptions?: Prisma.PushSubscriptionCreateNestedManyWithoutUserInput
@@ -795,6 +870,8 @@ export type UserUncheckedCreateWithoutBarberInput = {
   status?: $Enums.UserStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestUncheckedCreateNestedManyWithoutApplicantInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestUncheckedCreateNestedManyWithoutReviewedByInput
   customer?: Prisma.CustomerUncheckedCreateNestedOneWithoutUserInput
   salonMemberships?: Prisma.SalonMembershipUncheckedCreateNestedManyWithoutUserInput
   pushSubscriptions?: Prisma.PushSubscriptionUncheckedCreateNestedManyWithoutUserInput
@@ -827,6 +904,8 @@ export type UserUpdateWithoutBarberInput = {
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestUpdateManyWithoutApplicantNestedInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestUpdateManyWithoutReviewedByNestedInput
   customer?: Prisma.CustomerUpdateOneWithoutUserNestedInput
   salonMemberships?: Prisma.SalonMembershipUpdateManyWithoutUserNestedInput
   pushSubscriptions?: Prisma.PushSubscriptionUpdateManyWithoutUserNestedInput
@@ -843,7 +922,185 @@ export type UserUncheckedUpdateWithoutBarberInput = {
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestUncheckedUpdateManyWithoutApplicantNestedInput
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestUncheckedUpdateManyWithoutReviewedByNestedInput
   customer?: Prisma.CustomerUncheckedUpdateOneWithoutUserNestedInput
+  salonMemberships?: Prisma.SalonMembershipUncheckedUpdateManyWithoutUserNestedInput
+  pushSubscriptions?: Prisma.PushSubscriptionUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutRegistrationRequestsInput = {
+  id?: string
+  phone: string
+  firstName?: string | null
+  lastName?: string | null
+  birthDate?: Date | string | null
+  refreshTokenHash?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestCreateNestedManyWithoutReviewedByInput
+  customer?: Prisma.CustomerCreateNestedOneWithoutUserInput
+  barber?: Prisma.BarberCreateNestedOneWithoutUserInput
+  salonMemberships?: Prisma.SalonMembershipCreateNestedManyWithoutUserInput
+  pushSubscriptions?: Prisma.PushSubscriptionCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutRegistrationRequestsInput = {
+  id?: string
+  phone: string
+  firstName?: string | null
+  lastName?: string | null
+  birthDate?: Date | string | null
+  refreshTokenHash?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestUncheckedCreateNestedManyWithoutReviewedByInput
+  customer?: Prisma.CustomerUncheckedCreateNestedOneWithoutUserInput
+  barber?: Prisma.BarberUncheckedCreateNestedOneWithoutUserInput
+  salonMemberships?: Prisma.SalonMembershipUncheckedCreateNestedManyWithoutUserInput
+  pushSubscriptions?: Prisma.PushSubscriptionUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutRegistrationRequestsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutRegistrationRequestsInput, Prisma.UserUncheckedCreateWithoutRegistrationRequestsInput>
+}
+
+export type UserCreateWithoutReviewedRegistrationsInput = {
+  id?: string
+  phone: string
+  firstName?: string | null
+  lastName?: string | null
+  birthDate?: Date | string | null
+  refreshTokenHash?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestCreateNestedManyWithoutApplicantInput
+  customer?: Prisma.CustomerCreateNestedOneWithoutUserInput
+  barber?: Prisma.BarberCreateNestedOneWithoutUserInput
+  salonMemberships?: Prisma.SalonMembershipCreateNestedManyWithoutUserInput
+  pushSubscriptions?: Prisma.PushSubscriptionCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutReviewedRegistrationsInput = {
+  id?: string
+  phone: string
+  firstName?: string | null
+  lastName?: string | null
+  birthDate?: Date | string | null
+  refreshTokenHash?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestUncheckedCreateNestedManyWithoutApplicantInput
+  customer?: Prisma.CustomerUncheckedCreateNestedOneWithoutUserInput
+  barber?: Prisma.BarberUncheckedCreateNestedOneWithoutUserInput
+  salonMemberships?: Prisma.SalonMembershipUncheckedCreateNestedManyWithoutUserInput
+  pushSubscriptions?: Prisma.PushSubscriptionUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutReviewedRegistrationsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutReviewedRegistrationsInput, Prisma.UserUncheckedCreateWithoutReviewedRegistrationsInput>
+}
+
+export type UserUpsertWithoutRegistrationRequestsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutRegistrationRequestsInput, Prisma.UserUncheckedUpdateWithoutRegistrationRequestsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutRegistrationRequestsInput, Prisma.UserUncheckedCreateWithoutRegistrationRequestsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutRegistrationRequestsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutRegistrationRequestsInput, Prisma.UserUncheckedUpdateWithoutRegistrationRequestsInput>
+}
+
+export type UserUpdateWithoutRegistrationRequestsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  birthDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  refreshTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestUpdateManyWithoutReviewedByNestedInput
+  customer?: Prisma.CustomerUpdateOneWithoutUserNestedInput
+  barber?: Prisma.BarberUpdateOneWithoutUserNestedInput
+  salonMemberships?: Prisma.SalonMembershipUpdateManyWithoutUserNestedInput
+  pushSubscriptions?: Prisma.PushSubscriptionUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutRegistrationRequestsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  birthDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  refreshTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  reviewedRegistrations?: Prisma.SalonRegistrationRequestUncheckedUpdateManyWithoutReviewedByNestedInput
+  customer?: Prisma.CustomerUncheckedUpdateOneWithoutUserNestedInput
+  barber?: Prisma.BarberUncheckedUpdateOneWithoutUserNestedInput
+  salonMemberships?: Prisma.SalonMembershipUncheckedUpdateManyWithoutUserNestedInput
+  pushSubscriptions?: Prisma.PushSubscriptionUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserUpsertWithoutReviewedRegistrationsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutReviewedRegistrationsInput, Prisma.UserUncheckedUpdateWithoutReviewedRegistrationsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutReviewedRegistrationsInput, Prisma.UserUncheckedCreateWithoutReviewedRegistrationsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutReviewedRegistrationsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutReviewedRegistrationsInput, Prisma.UserUncheckedUpdateWithoutReviewedRegistrationsInput>
+}
+
+export type UserUpdateWithoutReviewedRegistrationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  birthDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  refreshTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestUpdateManyWithoutApplicantNestedInput
+  customer?: Prisma.CustomerUpdateOneWithoutUserNestedInput
+  barber?: Prisma.BarberUpdateOneWithoutUserNestedInput
+  salonMemberships?: Prisma.SalonMembershipUpdateManyWithoutUserNestedInput
+  pushSubscriptions?: Prisma.PushSubscriptionUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutReviewedRegistrationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  birthDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  refreshTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  registrationRequests?: Prisma.SalonRegistrationRequestUncheckedUpdateManyWithoutApplicantNestedInput
+  customer?: Prisma.CustomerUncheckedUpdateOneWithoutUserNestedInput
+  barber?: Prisma.BarberUncheckedUpdateOneWithoutUserNestedInput
   salonMemberships?: Prisma.SalonMembershipUncheckedUpdateManyWithoutUserNestedInput
   pushSubscriptions?: Prisma.PushSubscriptionUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -854,11 +1111,15 @@ export type UserUncheckedUpdateWithoutBarberInput = {
  */
 
 export type UserCountOutputType = {
+  registrationRequests: number
+  reviewedRegistrations: number
   salonMemberships: number
   pushSubscriptions: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  registrationRequests?: boolean | UserCountOutputTypeCountRegistrationRequestsArgs
+  reviewedRegistrations?: boolean | UserCountOutputTypeCountReviewedRegistrationsArgs
   salonMemberships?: boolean | UserCountOutputTypeCountSalonMembershipsArgs
   pushSubscriptions?: boolean | UserCountOutputTypeCountPushSubscriptionsArgs
 }
@@ -871,6 +1132,20 @@ export type UserCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensi
    * Select specific fields to fetch from the UserCountOutputType
    */
   select?: Prisma.UserCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountRegistrationRequestsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SalonRegistrationRequestWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountReviewedRegistrationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SalonRegistrationRequestWhereInput
 }
 
 /**
@@ -899,6 +1174,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   status?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  registrationRequests?: boolean | Prisma.User$registrationRequestsArgs<ExtArgs>
+  reviewedRegistrations?: boolean | Prisma.User$reviewedRegistrationsArgs<ExtArgs>
   customer?: boolean | Prisma.User$customerArgs<ExtArgs>
   barber?: boolean | Prisma.User$barberArgs<ExtArgs>
   salonMemberships?: boolean | Prisma.User$salonMembershipsArgs<ExtArgs>
@@ -947,6 +1224,8 @@ export type UserSelectScalar = {
 
 export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "phone" | "firstName" | "lastName" | "birthDate" | "refreshTokenHash" | "role" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  registrationRequests?: boolean | Prisma.User$registrationRequestsArgs<ExtArgs>
+  reviewedRegistrations?: boolean | Prisma.User$reviewedRegistrationsArgs<ExtArgs>
   customer?: boolean | Prisma.User$customerArgs<ExtArgs>
   barber?: boolean | Prisma.User$barberArgs<ExtArgs>
   salonMemberships?: boolean | Prisma.User$salonMembershipsArgs<ExtArgs>
@@ -959,6 +1238,8 @@ export type UserIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
 export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "User"
   objects: {
+    registrationRequests: Prisma.$SalonRegistrationRequestPayload<ExtArgs>[]
+    reviewedRegistrations: Prisma.$SalonRegistrationRequestPayload<ExtArgs>[]
     customer: Prisma.$CustomerPayload<ExtArgs> | null
     barber: Prisma.$BarberPayload<ExtArgs> | null
     salonMemberships: Prisma.$SalonMembershipPayload<ExtArgs>[]
@@ -1369,6 +1650,8 @@ readonly fields: UserFieldRefs;
  */
 export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  registrationRequests<T extends Prisma.User$registrationRequestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$registrationRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SalonRegistrationRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  reviewedRegistrations<T extends Prisma.User$reviewedRegistrationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$reviewedRegistrationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SalonRegistrationRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   customer<T extends Prisma.User$customerArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$customerArgs<ExtArgs>>): Prisma.Prisma__CustomerClient<runtime.Types.Result.GetResult<Prisma.$CustomerPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   barber<T extends Prisma.User$barberArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$barberArgs<ExtArgs>>): Prisma.Prisma__BarberClient<runtime.Types.Result.GetResult<Prisma.$BarberPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   salonMemberships<T extends Prisma.User$salonMembershipsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$salonMembershipsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SalonMembershipPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -1802,6 +2085,54 @@ export type UserDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * Limit how many Users to delete.
    */
   limit?: number
+}
+
+/**
+ * User.registrationRequests
+ */
+export type User$registrationRequestsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SalonRegistrationRequest
+   */
+  select?: Prisma.SalonRegistrationRequestSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SalonRegistrationRequest
+   */
+  omit?: Prisma.SalonRegistrationRequestOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SalonRegistrationRequestInclude<ExtArgs> | null
+  where?: Prisma.SalonRegistrationRequestWhereInput
+  orderBy?: Prisma.SalonRegistrationRequestOrderByWithRelationInput | Prisma.SalonRegistrationRequestOrderByWithRelationInput[]
+  cursor?: Prisma.SalonRegistrationRequestWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SalonRegistrationRequestScalarFieldEnum | Prisma.SalonRegistrationRequestScalarFieldEnum[]
+}
+
+/**
+ * User.reviewedRegistrations
+ */
+export type User$reviewedRegistrationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SalonRegistrationRequest
+   */
+  select?: Prisma.SalonRegistrationRequestSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SalonRegistrationRequest
+   */
+  omit?: Prisma.SalonRegistrationRequestOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SalonRegistrationRequestInclude<ExtArgs> | null
+  where?: Prisma.SalonRegistrationRequestWhereInput
+  orderBy?: Prisma.SalonRegistrationRequestOrderByWithRelationInput | Prisma.SalonRegistrationRequestOrderByWithRelationInput[]
+  cursor?: Prisma.SalonRegistrationRequestWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SalonRegistrationRequestScalarFieldEnum | Prisma.SalonRegistrationRequestScalarFieldEnum[]
 }
 
 /**

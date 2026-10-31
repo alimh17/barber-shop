@@ -27,6 +27,7 @@ import { RedisModule } from './redis/redis.module.js';
 import { validateEnvironment } from './config/environment.js';
 import { ReportsModule } from './reports/reports.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
+import { RegistrationModule } from './salon-registration/registration.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -58,6 +59,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     AvailabilityModule,
     ReportsModule,
     NotificationsModule,
+    RegistrationModule,
   ],
   controllers: [
     AppController,

@@ -42,8 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(
-    async (phone: string, code: string, salonSlug?: string) => {
-      const next = await verifyOtp(phone, code, salonSlug);
+    async (phone: string, code: string, salonSlug?: string, purpose?: string) => {
+      const next = await verifyOtp(phone, code, salonSlug, purpose);
       writeSession(next);
       setSession(next);
     },

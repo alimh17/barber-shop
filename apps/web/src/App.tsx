@@ -10,6 +10,8 @@ import { CreateServicePage } from './pages/CreateServicePage';
 import { CustomersPage } from './pages/CustomersPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
+import { SalonRegistrationPage } from './pages/SalonRegistrationPage';
+import { SalonRegistrationReviewPage } from './pages/SalonRegistrationReviewPage';
 import { CustomerBookingPage } from './pages/CustomerBookingPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { TeamPage } from './pages/TeamPage';
@@ -35,11 +37,13 @@ function App() {
     <AuthProvider>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register-salon" element={<SalonRegistrationPage />} />
         <Route path="/s/:slug" element={<SalonEntry />} />
         <Route element={<ProtectedRoute allowedRoles={[...dashboardRoles]} />}>
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/salon-registrations" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']}><SalonRegistrationReviewPage /></ProtectedRoute>} />
             <Route
               path="/salons/new"
               element={

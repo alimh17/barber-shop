@@ -29,7 +29,7 @@ export class AuthService {
     let allowPlatformBootstrap = false;
     if (!dto.salonSlug) {
       const platformUser = await this.usersService.findByPhone(dto.phone);
-      if (platformUser?.role !== UserRole.SUPER_ADMIN) {
+      if (platformUser?.role !== UserRole.SUPER_ADMIN && dto.purpose !== 'salon-registration') {
         throw new BadRequestException('Salon invitation link is required');
       }
     } else {
@@ -64,8 +64,12 @@ export class AuthService {
     let user = await this.usersService.findByPhone(dto.phone);
 
     if (!user) {
-      user = await this.usersService.createCustomer(dto.phone, dto.salonSlug);
-    } else if (user.role === 'CUSTOMER') {
+      if (dto.purpose === 'salon-registration' && !dto.salonSlug) {
+        user = await this.usersService.createRegistrationApplicant(dto.phone);
+      } else {
+        user = await this.usersService.createCustomer(dto.phone, dto.salonSlug);
+      }
+    } else if (user.role === 'CUSTOMER' && dto.purpose !== 'salon-registration') {
       await this.usersService.ensureCustomerSalon(user.id, dto.salonSlug);
     }
 

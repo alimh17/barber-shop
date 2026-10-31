@@ -64,7 +64,8 @@ export const ModelName = {
   WorkingHour: 'WorkingHour',
   DayOff: 'DayOff',
   Appointment: 'Appointment',
-  OtpRateLimitEntry: 'OtpRateLimitEntry'
+  OtpRateLimitEntry: 'OtpRateLimitEntry',
+  SalonRegistrationRequest: 'SalonRegistrationRequest'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -269,6 +270,26 @@ export const OtpRateLimitEntryScalarFieldEnum = {
 } as const
 
 export type OtpRateLimitEntryScalarFieldEnum = (typeof OtpRateLimitEntryScalarFieldEnum)[keyof typeof OtpRateLimitEntryScalarFieldEnum]
+
+
+export const SalonRegistrationRequestScalarFieldEnum = {
+  id: 'id',
+  applicantId: 'applicantId',
+  reviewedById: 'reviewedById',
+  name: 'name',
+  slug: 'slug',
+  phone: 'phone',
+  address: 'address',
+  description: 'description',
+  status: 'status',
+  rejectionReason: 'rejectionReason',
+  salonId: 'salonId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  reviewedAt: 'reviewedAt'
+} as const
+
+export type SalonRegistrationRequestScalarFieldEnum = (typeof SalonRegistrationRequestScalarFieldEnum)[keyof typeof SalonRegistrationRequestScalarFieldEnum]
 
 
 export const SortOrder = {

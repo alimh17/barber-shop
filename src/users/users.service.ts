@@ -78,6 +78,10 @@ export class UsersService {
     return Boolean(admin);
   }
 
+  async createRegistrationApplicant(phone: string): Promise<User> {
+    return this.prisma.user.create({ data: { phone, role: UserRole.CUSTOMER, status: UserStatus.ACTIVE } });
+  }
+
   async createCustomer(phone: string, salonSlug?: string): Promise<User> {
     if (!salonSlug)
       throw new BadRequestException('Salon invitation link is required');

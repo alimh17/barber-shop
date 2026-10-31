@@ -68,12 +68,12 @@ api.interceptors.response.use(
   },
 );
 
-export async function requestOtp(phone: string, salonSlug?: string) {
+export async function requestOtp(phone: string, salonSlug?: string, purpose?: string) {
   const { data } = await api.post<{
     message: string;
     expiresAt: string;
     otp?: string;
-  }>('/auth/request-otp', { phone, salonSlug });
+  }>('/auth/request-otp', { phone, salonSlug, purpose });
   const expiresIn = Math.max(
     0,
     Math.ceil((new Date(data.expiresAt).getTime() - Date.now()) / 1000),
@@ -85,11 +85,13 @@ export async function verifyOtp(
   phone: string,
   code: string,
   salonSlug?: string,
+  purpose?: string,
 ) {
   const { data } = await api.post<AuthResponse>('/auth/verify-otp', {
     phone,
     code,
     salonSlug,
+    purpose,
   });
   return toSession(data);
 }
