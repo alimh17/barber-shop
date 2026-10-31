@@ -25,7 +25,7 @@ export function SalonRegistrationReviewPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [rejectId, setRejectId] = useState<string | null>(null);
+  const [decision, setDecision] = useState<{ id: string; action: 'approve' | 'reject' } | null>(null);
   const [reason, setReason] = useState('');
   const [filter, setFilter] = useState<'PENDING' | 'ALL'>('PENDING');
 
@@ -50,12 +50,11 @@ export function SalonRegistrationReviewPage() {
       setError('دلیل رد درخواست باید حداقل ۳ کاراکتر باشد.');
       return;
     }
-    if (action === 'approve' && !window.confirm('آیا از تأیید این درخواست و ایجاد سالن اطمینان دارید؟')) return;
     setBusyId(id);
     setError('');
     try {
       await api.post('/salon-registrations/' + id + '/' + action, action === 'reject' ? { reason: reason.trim() } : {});
-      setRejectId(null);
+      setDecision(null);
       setReason('');
       await load();
     } catch (err) {
@@ -92,10 +91,22 @@ export function SalonRegistrationReviewPage() {
           {item.rejectionReason && <p><strong>دلیل رد:</strong> {item.rejectionReason}</p>}
         </div>
         {item.status === 'PENDING' && <div className="review-actions">
-          <button type="button" className="review-approve" disabled={!!busyId} onClick={() => void decide(item.id, 'approve')}>تأیید و ایجاد سالن</button>
-          <button type="button" className="review-reject" disabled={!!busyId} onClick={() => { setRejectId(rejectId === item.id ? null : item.id); setReason(''); }}>رد درخواست</button>
-          {rejectId === item.id && <div className="review-reason"><label htmlFor={'reason-' + item.id}>دلیل رد درخواست</label><textarea id={'reason-' + item.id} value={reason} maxLength={500} onChange={e => setReason(e.target.value)} placeholder="دلیل رد را برای متقاضی بنویسید" /><button type="button" disabled={!!busyId || reason.trim().length < 3} onClick={() => void decide(item.id, 'reject')}>ثبت رد درخواست</button></div>}
+          <button type="button" className="review-approve" disabled={!!busyId} onClick={() => { setDecision({ id: item.id, action: 'approve' }); setError(''); }}>تأیید و ایجاد سالن</button>
+          <button type="button" className="review-reject" disabled={!!busyId} onClick={() => { setDecision({ id: item.id, action: 'reject' }); setReason(''); setError(''); }}>رد درخواست</button>
         </div>}
       </article>)}</div>}
+    {decision && <div className="review-modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget && !busyId) setDecision(null); }}>
+      <div className="review-modal" role="dialog" aria-modal="true" aria-labelledby="review-modal-title" dir="rtl">
+        <h2 id="review-modal-title">{decision.action === 'approve' ? '????? ??????? ????' : '?? ??????? ????'}</h2>
+        <p>{decision.action === 'approve' ? '?? ????? ??? ???????? ???? ????? ??? ? ?????? ?? ???? ???? ????? ??????. ??? ????? ????????' : '???? ?? ???????? ???? ?? ???? ????. ??? ???? ?? ?????? ????? ???? ??????.'}</p>
+        <strong>{items.find(item => item.id === decision.id)?.name}</strong>
+        {decision.action === 'reject' && <div className="review-reason"><label htmlFor="review-reject-reason">???? ?? ???????</label><textarea id="review-reject-reason" value={reason} maxLength={500} onChange={event => setReason(event.target.value)} placeholder="???? ?? ?? ???????" /></div>}
+        {error && <p className="review-modal-error" role="alert">{error}</p>}
+        <div className="review-modal-actions">
+          <button type="button" disabled={!!busyId} onClick={() => { setDecision(null); setReason(''); setError(''); }}>??????</button>
+          <button type="button" className={decision.action === 'approve' ? 'review-approve' : 'review-reject-confirm'} disabled={!!busyId || (decision.action === 'reject' && reason.trim().length < 3)} onClick={() => void decide(decision.id, decision.action)}>{busyId ? '?? ??? ???...' : decision.action === 'approve' ? '????? ? ????? ????' : '????? ?? ???????'}</button>
+        </div>
+      </div>
+    </div>}
   </main>;
 }
