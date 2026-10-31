@@ -3,6 +3,7 @@ import {
   CalendarDays,
   CirclePlus,
   LayoutDashboard,
+  Link2,
   ChartNoAxesCombined,
   Bell,
   LogOut,
@@ -43,6 +44,7 @@ export function DashboardLayout() {
     { to: '/settings/notifications', label: 'اعلان‌ها', icon: Bell },
     ...(isAdmin
       ? [
+          { to: '/salon-link', label: '\u0644\u06cc\u0646\u06a9 \u0631\u0632\u0631\u0648 \u0633\u0627\u0644\u0646', icon: Link2 },
           { to: '/appointments', label: 'نوبت‌ها', icon: CalendarDays },
           { to: '/customers', label: 'مشتریان', icon: Users },
           {

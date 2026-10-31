@@ -11,6 +11,7 @@ import { CreateServicePage } from './pages/CreateServicePage';
 import { CustomersPage } from './pages/CustomersPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
+import { SalonBookingLinkPage } from './pages/SalonBookingLinkPage';
 import { SalonRegistrationPage } from './pages/SalonRegistrationPage';
 import { SalonRegistrationReviewPage } from './pages/SalonRegistrationReviewPage';
 import { CustomerBookingPage } from './pages/CustomerBookingPage';
@@ -51,6 +52,7 @@ function App() {
         <Route element={<ProtectedRoute allowedRoles={[...dashboardRoles]} />}>
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/salon-link" element={<ProtectedRoute allowedRoles={[...adminRoles]}><SalonBookingLinkPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/salon-registrations" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']}><SalonRegistrationReviewPage /></ProtectedRoute>} />
             <Route
