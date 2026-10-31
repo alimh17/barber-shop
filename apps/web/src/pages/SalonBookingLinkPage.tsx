@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { Building2, Check, Copy, ExternalLink, Link2, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getApiErrorMessage } from '../auth/api';
@@ -11,6 +12,7 @@ export function SalonBookingLinkPage() {
     queryKey: ['salons'],
     queryFn: getSalons,
   });
+  const qrRef = useRef<HTMLDivElement>(null);
   const [selectedId, setSelectedId] = useState('');
   const [copied, setCopied] = useState(false);
   const salon = salons.find(item => item.id === selectedId) ?? salons[0];
@@ -25,6 +27,21 @@ export function SalonBookingLinkPage() {
     } catch {
       toast.error('کپی لینک انجام نشد');
     }
+  }
+
+  function downloadQr() {
+    const svg = qrRef.current?.querySelector('svg');
+    if (!svg || !salon) return;
+    const xml = new XMLSerializer().serializeToString(svg);
+    const blob = new Blob([xml], { type: 'image/svg+xml;charset=utf-8' });
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = 'salon-qr-' + salon.slug + '.svg';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(blobUrl);
   }
 
   async function shareLink() {
@@ -65,6 +82,14 @@ export function SalonBookingLinkPage() {
           <button className="booking-link-primary" type="button" onClick={() => void copyLink()}>{copied ? <Check size={18}/> : <Copy size={18}/>} {copied ? 'کپی شد' : 'کپی لینک'}</button>
           <button type="button" onClick={() => void shareLink()}><Share2 size={18}/> اشتراک‌گذاری</button>
           <a href={url} target="_blank" rel="noopener noreferrer"><ExternalLink size={18}/> مشاهده لینک</a>
+        </div>
+        <div className="booking-link-qr-section">
+          <h2>{'\u06a9\u062f QR \u0633\u0627\u0644\u0646'}</h2>
+          <p>{'\u0645\u0634\u062a\u0631\u06cc\u0627\u0646 \u0628\u0627 \u0627\u0633\u06a9\u0646 \u0627\u06cc\u0646 \u06a9\u062f \u0645\u0633\u062a\u0642\u06cc\u0645\u0627\u064b \u0648\u0627\u0631\u062f \u0635\u0641\u062d\u0647 \u0633\u0627\u0644\u0646 \u0645\u06cc\u200c\u0634\u0648\u0646\u062f.'}</p>
+          <div ref={qrRef} className="booking-link-qr" dir="ltr">
+            <QRCodeSVG value={url} size={220} marginSize={2} level="H" bgColor="#ffffff" fgColor="#173f31" title={'QR ' + salon.name} />
+          </div>
+          <button className="booking-link-download" type="button" onClick={downloadQr}>{'\u062f\u0627\u0646\u0644\u0648\u062f \u06a9\u062f QR'}</button>
         </div>
         <p className="booking-link-note">این لینک مشتری را به صفحه ورود اختصاصی سالن هدایت می‌کند. برای ارسال به مشتریان خارج از شبکه، ابتدا باید سایت روی دامنه عمومی منتشر شده باشد.</p>
       </div>}
