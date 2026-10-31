@@ -1084,3 +1084,25 @@
   .form-actions { display: grid; grid-template-columns: 1fr 1fr; }
   .form-actions > * { justify-content: center; text-align: center; }
 }
+
+/* Keep the brand and account actions visible while long menus scroll. */
+.sidebar {
+    overflow: hidden;
+}
+.sidebar-brand,
+.sidebar-bottom {
+    flex-shrink: 0;
+}
+.sidebar nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #719487 transparent;
+    padding-bottom: 12px;
+}
+.sidebar nav::-webkit-scrollbar { width: 6px; }
+.sidebar nav::-webkit-scrollbar-thumb { background: #719487; border-radius: 6px; }
+.sidebar nav::-webkit-scrollbar-track { background: transparent; }
