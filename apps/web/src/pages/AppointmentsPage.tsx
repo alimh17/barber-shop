@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { getApiErrorMessage } from '../auth/api';
 import { useAuth } from '../auth/auth-context';
 import { PersianDateInput } from '../components/PersianDateInput';
+import { ConfirmModal } from '../components/ConfirmModal';
 import {
   appointmentStatusLabels,
   changeAppointmentStatus,
@@ -164,13 +165,15 @@ function AppointmentRow({
       : []
     : nextStatuses[appointment.status];
 
+  const [cancelOpen, setCancelOpen] = useState(false);
   const handleAction = (next: AppointmentStatus) => {
-    if (next === 'CANCELLED' && !window.confirm('این نوبت لغو شود؟')) return;
+    if (next === 'CANCELLED') { setCancelOpen(true); return; }
     onChange(next);
   };
 
   return (
     <article className="mgmt-card">
+      <ConfirmModal open={cancelOpen} title={"\u0644\u063a\u0648 \u0646\u0648\u0628\u062a"} description={"\u0622\u06cc\u0627 \u0627\u0632 \u0644\u063a\u0648 \u0627\u06cc\u0646 \u0646\u0648\u0628\u062a \u0627\u0637\u0645\u06cc\u0646\u0627\u0646 \u062f\u0627\u0631\u06cc\u062f\u061f"} confirmLabel={"\u0628\u0644\u0647\u060c \u0644\u063a\u0648 \u0634\u0648\u062f"} destructive pending={busy} onClose={() => setCancelOpen(false)} onConfirm={() => { setCancelOpen(false); onChange('CANCELLED'); }} />
       <div className="mgmt-card-time">
         <strong>{tehranTime(appointment.startAt)}</strong>
         <span>{tehranDisplayDate(appointment.startAt)}</span>
