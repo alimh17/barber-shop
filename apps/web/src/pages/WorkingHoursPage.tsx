@@ -19,10 +19,16 @@ const days: { id: Day; label: string }[] = [
   { id: 'FRIDAY', label: 'جمعه' },
 ];
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
+function normalizeTime(value: string): string {
+  return value.replace(/[\u06f0-\u06f9\u0660-\u0669]/g, digit => {
+    const code = digit.charCodeAt(0);
+    return String(code >= 0x06f0 ? code - 0x06f0 : code - 0x0660);
+  }).replace(/[\u061b\u2236\uff1a]/g, ':');
+}
 function buildDraft(hours: WorkingHour[]): Record<Day, DayDraft> {
   return Object.fromEntries(days.map(day => {
     const existing = hours.find(hour => hour.dayOfWeek === day.id);
-    return [day.id, { enabled: Boolean(existing?.isActive), start: existing?.startTime ?? '09:00', end: existing?.endTime ?? '20:00' }];
+    return [day.id, { enabled: Boolean(existing?.isActive), start: normalizeTime(existing?.startTime ?? '09:00'), end: normalizeTime(existing?.endTime ?? '20:00') }];
   })) as Record<Day, DayDraft>;
 }
 function sameDraft(a: DayDraft, b: DayDraft) {
@@ -94,8 +100,8 @@ export function WorkingHoursPage() {
         return <div className="working-day" key={day.id}>
           <strong>{day.label}</strong>
           <label className="working-day-toggle"><input type="checkbox" checked={row.enabled} disabled={save.isPending} onChange={event => changeDay(day.id, { enabled: event.target.checked })} /> روز کاری</label>
-          <label>از <input aria-label={'شروع ' + day.label} type="text" inputMode="numeric" dir="ltr" maxLength={5} placeholder="09:00" value={row.start} disabled={!row.enabled || save.isPending} onChange={event => changeDay(day.id, { start: event.target.value })} /></label>
-          <label>تا <input aria-label={'پایان ' + day.label} type="text" inputMode="numeric" dir="ltr" maxLength={5} placeholder="20:00" value={row.end} disabled={!row.enabled || save.isPending} onChange={event => changeDay(day.id, { end: event.target.value })} /></label>
+          <label>از <input aria-label={'شروع ' + day.label} type="text" inputMode="numeric" dir="ltr" maxLength={5} placeholder="09:00" value={row.start} disabled={!row.enabled || save.isPending} onChange={event => changeDay(day.id, { start: normalizeTime(event.target.value) })} /></label>
+          <label>تا <input aria-label={'پایان ' + day.label} type="text" inputMode="numeric" dir="ltr" maxLength={5} placeholder="20:00" value={row.end} disabled={!row.enabled || save.isPending} onChange={event => changeDay(day.id, { end: normalizeTime(event.target.value) })} /></label>
           {row.enabled && (!timePattern.test(row.start) || !timePattern.test(row.end) || row.start >= row.end) && <small role="alert">ساعت را به صورت ۲۴ ساعته وارد کنید؛ پایان باید بعد از شروع باشد.</small>}
         </div>;
       })}
