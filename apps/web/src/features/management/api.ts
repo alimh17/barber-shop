@@ -202,7 +202,6 @@ export async function getAvailability(params: {
   barberId: string;
   serviceId: string;
   date: string;
-  slotIntervalMinutes?: number;
 }) {
   return (await api.get<AvailabilityResponse>('/availability', { params }))
     .data;

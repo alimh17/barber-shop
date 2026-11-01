@@ -14,25 +14,21 @@ import {
   loadSalonTimezone,
   setActiveSalonTimezone,
   personName,
+  tehranDate,
   type AvailabilitySlot,
   type ManagedUser,
 } from '../features/management/api';
 import '../features/management/management.css';
 
 const localTime = (slot: AvailabilitySlot) => slot.localStart.slice(11, 16);
-const browserToday = () => {
-  const today = new Date();
-  return [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')].join('-');
-};
 
 export function CreateAppointmentPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [barberId, setBarberId] = useState('');
   const [serviceId, setServiceId] = useState('');
-  const [date, setDate] = useState(browserToday);
+  const [date, setDate] = useState(() => tehranDate());
   const [startAt, setStartAt] = useState('');
-  const [slotIntervalMinutes, setSlotIntervalMinutes] = useState(15);
   const [customerSearch, setCustomerSearch] = useState('');
   const [customer, setCustomer] = useState<ManagedUser | null>(null);
   const [note, setNote] = useState('');
@@ -57,6 +53,7 @@ export function CreateAppointmentPage() {
       .then((zone) => {
         if (active) {
           setActiveSalonTimezone(zone);
+          setDate(tehranDate());
         }
       })
       .catch(() => {});
@@ -79,7 +76,6 @@ export function CreateAppointmentPage() {
       barberId,
       serviceId,
       date,
-      slotIntervalMinutes,
     ],
     queryFn: () =>
       getAvailability({
@@ -87,7 +83,6 @@ export function CreateAppointmentPage() {
         barberId,
         serviceId,
         date,
-        slotIntervalMinutes,
       }),
     enabled: Boolean(selectedBarber && serviceId && date),
   });
@@ -223,7 +218,7 @@ export function CreateAppointmentPage() {
                 تاریخ <b>*</b>
               </span>
               <PersianDateInput
-                min={browserToday()}
+                min={tehranDate()}
                 value={date}
                 onChange={pickDate}
                 aria-label="تاریخ شمسی نوبت"
@@ -246,13 +241,6 @@ export function CreateAppointmentPage() {
           {!selectedBarber || !serviceId ? (
             <p className="inline-note">آرایشگر و خدمت را انتخاب کنید.</p>
           ) : null}
-          <div className="slot-interval-control">
-            <label htmlFor="slot-interval">{'\u0641\u0627\u0635\u0644\u0647 \u0634\u0631\u0648\u0639 \u0646\u0648\u0628\u062a\u200c\u0647\u0627'}</label>
-            <select id="slot-interval" value={slotIntervalMinutes} onChange={event => { setSlotIntervalMinutes(Number(event.target.value)); setStartAt(''); }}>
-              {[5, 10, 15, 20, 30, 45, 60].map(minutes => <option key={minutes} value={minutes}>{minutes.toLocaleString('fa-IR')} {'\u062f\u0642\u06cc\u0642\u0647'}</option>)}
-            </select>
-            <small>{'\u0641\u0627\u0635\u0644\u0647 \u0628\u06cc\u0646 \u0632\u0645\u0627\u0646\u200c\u0647\u0627\u06cc \u0634\u0631\u0648\u0639 \u0627\u0633\u062a\u061b \u0645\u062f\u062a \u0647\u0631 \u062e\u062f\u0645\u062a \u062c\u062f\u0627\u06af\u0627\u0646\u0647 \u0645\u062d\u0627\u0633\u0628\u0647 \u0645\u06cc\u200c\u0634\u0648\u062f.'}</small>
-          </div>
           {slotsQuery.isPending && selectedBarber && serviceId ? (
             <div className="data-state">
               <span className="spinner" />

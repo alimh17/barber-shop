@@ -110,19 +110,6 @@ describe('AvailabilityService', () => {
     expect(prisma.salon.findUnique).not.toHaveBeenCalled();
   });
 
-  it('includes the last valid start before closing at 23:00', async () => {
-    prisma.workingHour.findUnique.mockResolvedValue({ ...mockWorkingHour, endTime: '23:00' });
-    const result = await service.getAvailability({ ...dto, slotIntervalMinutes: 15 });
-    expect(result.slots.at(-1)?.localStart.slice(11, 16)).toBe('22:30');
-    expect(result.slots.at(-1)?.localEnd.slice(11, 16)).toBe('23:00');
-  });
-
-  it('uses the selected start interval without changing service duration', async () => {
-    const result = await service.getAvailability({ ...dto, slotIntervalMinutes: 30 });
-    expect(result.slots[1].localStart.slice(11, 16)).toBe('09:30');
-    expect(result.slots[0].localEnd.slice(11, 16)).toBe('09:30');
-  });
-
   it('throws when the salon does not exist', async () => {
     prisma.salon.findUnique.mockResolvedValue(null);
 

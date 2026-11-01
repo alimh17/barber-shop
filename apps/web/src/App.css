@@ -1121,5 +1121,3 @@
 .walkin-submit:hover:not(:disabled) { background: #184b38; }
 .walkin-submit:disabled { opacity: .55; cursor: not-allowed; }
 @media(max-width:700px) { .walkin-fields { grid-template-columns: 1fr; } .walkin-submit { width: 100%; } .walkin-panel { padding: 15px; } }
-
-.slot-interval-control{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 18px}.slot-interval-control label{font-weight:700;font-size:13px}.slot-interval-control select{min-width:115px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:inherit;font:inherit}.slot-interval-control small{flex-basis:100%;font-size:12px;color:var(--muted)}
