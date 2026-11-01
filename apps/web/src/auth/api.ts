@@ -44,6 +44,13 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
+    // Correlate frontend failures with server logs without exposing tokens or payloads.
+    const requestId = error.response?.headers?.['x-request-id'] ??
+      (error.response?.data && typeof error.response.data === 'object' &&
+       'requestId' in error.response.data ? String(error.response.data.requestId) : undefined);
+    if (error.response?.status && error.response.status >= 500) {
+      console.error('[API error]', { status: error.response.status, requestId: requestId ?? 'unavailable' });
+    }
     const request = error.config as
       (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
     if (
