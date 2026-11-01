@@ -1106,3 +1106,18 @@
 .sidebar nav::-webkit-scrollbar { width: 6px; }
 .sidebar nav::-webkit-scrollbar-thumb { background: #719487; border-radius: 6px; }
 .sidebar nav::-webkit-scrollbar-track { background: transparent; }
+
+/* Inline customer creation in the new appointment flow */
+.walkin-customer { margin-top: 14px; font-family: inherit; }
+.walkin-toggle { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 9px 17px; border: 1px solid var(--green); border-radius: 10px; background: #fff; color: var(--green); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .2s ease, border-color .2s ease; }
+.walkin-toggle:hover { background: var(--mint); }
+.walkin-toggle:focus-visible, .walkin-submit:focus-visible { outline: 3px solid #92b7a5; outline-offset: 2px; }
+.walkin-panel { margin-top: 14px; padding: 20px; background: #f8faf9; border: 1px solid var(--line); border-radius: 14px; }
+.walkin-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+.walkin-fields .form-field { min-width: 0; }
+.walkin-fields input { font-family: inherit; }
+.walkin-hint { margin: 12px 0; font-size: 12px; color: var(--muted); }
+.walkin-submit { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 22px; border: 0; border-radius: 10px; background: var(--green); color: white; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.walkin-submit:hover:not(:disabled) { background: #184b38; }
+.walkin-submit:disabled { opacity: .55; cursor: not-allowed; }
+@media(max-width:700px) { .walkin-fields { grid-template-columns: 1fr; } .walkin-submit { width: 100%; } .walkin-panel { padding: 15px; } }

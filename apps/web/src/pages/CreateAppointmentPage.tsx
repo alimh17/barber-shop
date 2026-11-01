@@ -304,12 +304,23 @@ export function CreateAppointmentPage() {
           customerOptions.length === 0 ? (
             <p className="inline-note">مشتری‌ای با این مشخصات پیدا نشد.</p>
           ) : null}
-          <button type="button" className="secondary-button" onClick={() => setShowNewCustomer(value => !value)}>{'\u062b\u0628\u062a \u0645\u0634\u062a\u0631\u06cc \u062c\u062f\u06cc\u062f'}</button>
-          {showNewCustomer && <div className="form-grid" style={{ marginTop: 16 }}>
-            <label className="form-field"><span>{'\u0646\u0627\u0645 \u0645\u0634\u062a\u0631\u06cc'}</span><input value={newCustomerName} onChange={event => setNewCustomerName(event.target.value)} placeholder={'\u0646\u0627\u0645 \u0645\u0634\u062a\u0631\u06cc'} /></label>
-            <label className="form-field"><span>{'\u0634\u0645\u0627\u0631\u0647 \u0645\u0648\u0628\u0627\u06cc\u0644'}</span><input dir="ltr" value={newCustomerPhone} onChange={event => setNewCustomerPhone(event.target.value)} placeholder="09123456789" /></label>
-            <button type="button" className="primary-button" disabled={!selectedBarber || registerCustomer.isPending || (!newCustomerName.trim() && !newCustomerPhone.trim())} onClick={() => registerCustomer.mutate()}>{registerCustomer.isPending ? '\u062f\u0631 \u062d\u0627\u0644 \u062b\u0628\u062a...' : '??? ? ???\u0646\u0627\u0645 \u0645\u0634\u062a\u0631\u06cc'}</button>
-          </div>}
+          <div className="walkin-customer">
+            <button type="button" className="walkin-toggle" aria-expanded={showNewCustomer} onClick={() => setShowNewCustomer(value => !value)}>
+              {showNewCustomer ? '\u0628\u0633\u062a\u0646 \u0641\u0631\u0645' : '+ \u062b\u0628\u062a \u0645\u0634\u062a\u0631\u06cc \u062c\u062f\u06cc\u062f'}
+            </button>
+            {showNewCustomer && (
+              <div className="walkin-panel">
+                <div className="walkin-fields">
+                  <label className="form-field"><span>{'\u0646\u0627\u0645 \u0645\u0634\u062a\u0631\u06cc'}</span><input value={newCustomerName} onChange={event => setNewCustomerName(event.target.value)} placeholder={'\u0646\u0627\u0645 \u0645\u0634\u062a\u0631\u06cc'} /></label>
+                  <label className="form-field"><span>{'\u0634\u0645\u0627\u0631\u0647 \u0645\u0648\u0628\u0627\u06cc\u0644'}</span><input dir="ltr" value={newCustomerPhone} onChange={event => setNewCustomerPhone(event.target.value)} placeholder="09123456789" /></label>
+                </div>
+                <p className="walkin-hint">{'\u0648\u0627\u0631\u062f \u06a9\u0631\u062f\u0646 \u0646\u0627\u0645 \u06cc\u0627 \u0634\u0645\u0627\u0631\u0647 \u0645\u0648\u0628\u0627\u06cc\u0644 \u06a9\u0627\u0641\u06cc \u0627\u0633\u062a.'}</p>
+                <button type="button" className="walkin-submit" disabled={!selectedBarber || registerCustomer.isPending || (!newCustomerName.trim() && !newCustomerPhone.trim())} onClick={() => registerCustomer.mutate()}>
+                  {registerCustomer.isPending ? '\u062f\u0631 \u062d\u0627\u0644 \u062b\u0628\u062a...' : '\u062b\u0628\u062a \u0648 \u0627\u0646\u062a\u062e\u0627\u0628 \u0645\u0634\u062a\u0631\u06cc'}
+                </button>
+              </div>
+            )}
+          </div>
           {customerOptions.length ? (
             <div className="picker-list">
               {customerOptions.map((c) => (
