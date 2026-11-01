@@ -63,6 +63,7 @@ export interface AvailabilitySlot {
 
 export interface AvailabilityResponse {
   dayOff: boolean;
+  workingHours?: { startTime: string; endTime: string } | null;
   slots: AvailabilitySlot[];
 }
 

@@ -243,7 +243,8 @@ export function CreateAppointmentPage() {
           {slotsQuery.data?.dayOff ? (
             <p className="inline-note">این روز برای آرایشگر تعطیل است.</p>
           ) : null}
-          {slotsQuery.data && !slotsQuery.data.dayOff && slots.length === 0 ? (
+          {slotsQuery.data && !slotsQuery.data.dayOff && !slotsQuery.data.workingHours ? <p className="inline-note">{'\u0628\u0631\u0627\u06cc \u0627\u06cc\u0646 \u0631\u0648\u0632 \u0633\u0627\u0639\u0627\u062a \u06a9\u0627\u0631\u06cc \u0622\u0631\u0627\u06cc\u0634\u06af\u0631 \u062b\u0628\u062a \u0646\u0634\u062f\u0647 \u0627\u0633\u062a.'} <Link to="/working-hours">{'\u062a\u0646\u0638\u06cc\u0645 \u0633\u0627\u0639\u0627\u062a \u06a9\u0627\u0631\u06cc'}</Link></p> : null}
+          {slotsQuery.data && !slotsQuery.data.dayOff && !!slotsQuery.data.workingHours && slots.length === 0 ? (
             <p className="inline-note">در این روز زمان آزادی نیست.</p>
           ) : null}
           {slots.length ? (

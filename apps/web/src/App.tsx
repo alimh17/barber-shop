@@ -18,6 +18,7 @@ import { SalonRegistrationReviewPage } from './pages/SalonRegistrationReviewPage
 import { CustomerBookingPage } from './pages/CustomerBookingPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { TeamPage } from './pages/TeamPage';
+import { WorkingHoursPage } from './pages/WorkingHoursPage';
 import { SmsSettingsPage } from './pages/SmsSettingsPage';
 import { RevenueReportPage } from './pages/RevenueReportPage';
 import { BarberRevenuePage } from './pages/BarberRevenuePage';
@@ -81,6 +82,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/working-hours" element={<ProtectedRoute allowedRoles={[...adminRoles]}><WorkingHoursPage /></ProtectedRoute>} />
             <Route
               path="/team"
               element={
