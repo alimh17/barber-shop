@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -107,6 +108,9 @@ export class AppointmentsService {
       barber.salonId,
     );
 
+    if (role === UserRole.BARBER && barber.userId !== userId) {
+      throw new ForbiddenException('Barbers can only book their own appointments');
+    }
     const customer = await this.prisma.customer.findUnique({
       where: { id: dto.customerId },
     });

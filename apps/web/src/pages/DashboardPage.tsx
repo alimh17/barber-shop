@@ -203,7 +203,7 @@ export function DashboardPage() {
                   <div className="appointment-row" key={a.id}>
                     <time>{tehranTime(a.startAt)}</time>
                     <span className="customer-avatar">
-                      {personName(a.customer?.user).charAt(0)}
+                      {(personName(a.customer?.user) ?? '?').charAt(0)}
                     </span>
                     <div className="appointment-main">
                       <strong>{personName(a.customer?.user)}</strong>

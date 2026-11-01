@@ -7,6 +7,7 @@ import { getApiErrorMessage } from '../auth/api';
 import { PersianDateInput } from '../components/PersianDateInput';
 import {
   createAdminAppointment,
+  createWalkInCustomer,
   getAvailability,
   getBarberServices,
   listUsers,
@@ -31,6 +32,9 @@ export function CreateAppointmentPage() {
   const [customerSearch, setCustomerSearch] = useState('');
   const [customer, setCustomer] = useState<ManagedUser | null>(null);
   const [note, setNote] = useState('');
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState('');
+  const [newCustomerPhone, setNewCustomerPhone] = useState('');
 
   const barbersQuery = useQuery({
     queryKey: ['team', 'barbers'],
@@ -92,11 +96,16 @@ export function CreateAppointmentPage() {
     enabled: customerTerm.length >= 3,
   });
   const customerOptions = customersQuery.data?.items ?? [];
+  const registerCustomer = useMutation({
+    mutationFn: () => createWalkInCustomer({ salonId: selectedBarber?.salonId ?? '', name: newCustomerName.trim() || undefined, phone: newCustomerPhone.trim() || undefined }),
+    onSuccess: async (user) => { setCustomer(user); setCustomerSearch(''); setShowNewCustomer(false); await queryClient.invalidateQueries({ queryKey: ['customer-search'] }); toast.success('\u0645\u0634\u062a\u0631\u06cc \u062b\u0628\u062a \u0634\u062f'); },
+    onError: error => toast.error(getApiErrorMessage(error, '\u0646\u0627\u0645 \u0645\u0634\u062a\u0631\u06cc ????? ???')),
+  });
 
   const mutation = useMutation({
     mutationFn: () =>
       createAdminAppointment({
-        customerId: customer?.id ?? '',
+        customerId: customer?.customer?.id ?? '',
         barberId,
         serviceId,
         startAt,
@@ -117,7 +126,7 @@ export function CreateAppointmentPage() {
   });
 
   const canSubmit =
-    Boolean(customer && barberId && serviceId && startAt) &&
+    Boolean(customer?.customer?.id && barberId && serviceId && startAt) &&
     !mutation.isPending;
 
   const pickBarber = (id: string) => {
@@ -295,6 +304,12 @@ export function CreateAppointmentPage() {
           customerOptions.length === 0 ? (
             <p className="inline-note">مشتری‌ای با این مشخصات پیدا نشد.</p>
           ) : null}
+          <button type="button" className="secondary-button" onClick={() => setShowNewCustomer(value => !value)}>{'\u062b\u0628\u062a \u0645\u0634\u062a\u0631\u06cc \u062c\u062f\u06cc\u062f'}</button>
+          {showNewCustomer && <div className="form-grid" style={{ marginTop: 16 }}>
+            <label className="form-field"><span>{'\u0646\u0627\u0645 \u0645\u0634\u062a\u0631\u06cc'}</span><input value={newCustomerName} onChange={event => setNewCustomerName(event.target.value)} placeholder={'\u0646\u0627\u0645 \u0645\u0634\u062a\u0631\u06cc'} /></label>
+            <label className="form-field"><span>{'\u0634\u0645\u0627\u0631\u0647 \u0645\u0648\u0628\u0627\u06cc\u0644'}</span><input dir="ltr" value={newCustomerPhone} onChange={event => setNewCustomerPhone(event.target.value)} placeholder="09123456789" /></label>
+            <button type="button" className="primary-button" disabled={!selectedBarber || registerCustomer.isPending || (!newCustomerName.trim() && !newCustomerPhone.trim())} onClick={() => registerCustomer.mutate()}>{registerCustomer.isPending ? '\u062f\u0631 \u062d\u0627\u0644 \u062b\u0628\u062a...' : '??? ? ???\u0646\u0627\u0645 \u0645\u0634\u062a\u0631\u06cc'}</button>
+          </div>}
           {customerOptions.length ? (
             <div className="picker-list">
               {customerOptions.map((c) => (

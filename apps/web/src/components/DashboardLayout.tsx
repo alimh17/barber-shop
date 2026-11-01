@@ -59,7 +59,7 @@ export function DashboardLayout() {
       ? [{ to: '/book', label: 'رزرو نوبت', icon: CalendarDays }]
       : []),
     ...(user.role === 'BARBER'
-      ? [{ to: '/my-revenue', label: 'درآمد من', icon: ChartNoAxesCombined }, { to: '/appointments', label: 'درخواست‌های نوبت', icon: CalendarDays }]
+      ? [{ to: '/appointments/new', label: '\u062b\u0628\u062a \u0646\u0648\u0628\u062a \u062c\u062f\u06cc\u062f', icon: CalendarDays }, { to: '/my-revenue', label: 'درآمد من', icon: ChartNoAxesCombined }, { to: '/appointments', label: 'درخواست‌های نوبت', icon: CalendarDays }]
       : []),
     ...(user.role === 'SUPER_ADMIN'
       ? [{ to: '/salon-registrations', label: '\u062f\u0631\u062e\u0648\u0627\u0633\u062a\u200c\u0647\u0627\u06cc \u0633\u0627\u0644\u0646', icon: Building2 },

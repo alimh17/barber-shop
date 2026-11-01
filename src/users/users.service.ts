@@ -14,6 +14,7 @@ import {
   UserStatus,
 } from '../generated/prisma/client.js';
 import { ListUsersDto } from './dto/list-users.dto.js';
+import { CreateWalkInCustomerDto } from './dto/create-walk-in-customer.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 
 const publicUserSelect = {
@@ -35,6 +36,7 @@ const publicUserSelect = {
     },
   },
   barber: { select: { id: true, salonId: true, isActive: true } },
+  customer: { select: { id: true } },
 } satisfies Prisma.UserSelect;
 
 @Injectable()
@@ -84,6 +86,45 @@ export class UsersService {
       select: { id: true },
     });
     return Boolean(membership);
+  }
+
+  async createWalkInCustomer(actorId: string, role: UserRole, dto: CreateWalkInCustomerDto) {
+    const name = dto.name?.trim();
+    if (!name && !dto.phone) throw new BadRequestException('Customer name or phone is required');
+    const authorized = role === UserRole.SUPER_ADMIN || Boolean(
+      role === UserRole.BARBER
+        ? await this.prisma.barber.findFirst({ where: { userId: actorId, salonId: dto.salonId, isActive: true, salon: { isActive: true } }, select: { id: true } })
+        : await this.prisma.salonMembership.findFirst({ where: { userId: actorId, salonId: dto.salonId, isActive: true, salon: { isActive: true } }, select: { id: true } }),
+    );
+    if (!authorized) throw new ForbiddenException('You do not have access to this salon');
+    const salon = await this.prisma.salon.findFirst({ where: { id: dto.salonId, isActive: true }, select: { id: true } });
+    if (!salon) throw new NotFoundException('Salon not found');
+    const existing = dto.phone ? await this.prisma.user.findUnique({ where: { phone: dto.phone }, include: { salonMemberships: true } }) : null;
+    if (existing) {
+      if (existing.role !== UserRole.CUSTOMER || existing.status !== UserStatus.ACTIVE)
+        throw new ConflictException('Phone belongs to a non-customer or inactive account');
+      if (existing.salonMemberships.some(m => m.salonId !== dto.salonId))
+        throw new ConflictException('Customer belongs to another salon');
+      return this.prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          customer: { upsert: { create: {}, update: {} } },
+          salonMemberships: { upsert: { where: { userId_salonId: { userId: existing.id, salonId: dto.salonId } }, create: { salonId: dto.salonId }, update: { isActive: true } } },
+        },
+        select: publicUserSelect,
+      });
+    }
+    return this.prisma.user.create({
+      data: {
+        phone: dto.phone ?? null,
+        firstName: name,
+        role: UserRole.CUSTOMER,
+        status: UserStatus.ACTIVE,
+        customer: { create: {} },
+        salonMemberships: { create: { salonId: dto.salonId } },
+      },
+      select: publicUserSelect,
+    });
   }
 
   async createRegistrationApplicant(phone: string): Promise<User> {
@@ -251,6 +292,9 @@ export class UsersService {
   ): Prisma.UserWhereInput {
     if (actorRole === UserRole.SUPER_ADMIN)
       return salonId ? this.salonRelationScope(salonId) : {};
+    if (actorRole === UserRole.BARBER) {
+      return { OR: [{ id: actorId }, { role: UserRole.CUSTOMER, salonMemberships: { some: { isActive: true, ...(salonId ? { salonId } : {}), salon: { barbers: { some: { userId: actorId, isActive: true } } } } } }] };
+    }
     if (actorRole === UserRole.ADMIN) {
       const salonScope: Prisma.UserWhereInput = {
         OR: [

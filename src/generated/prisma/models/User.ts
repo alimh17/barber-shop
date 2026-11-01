@@ -179,7 +179,7 @@ export type UserGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
 
 export type UserGroupByOutputType = {
   id: string
-  phone: string
+  phone: string | null
   firstName: string | null
   lastName: string | null
   birthDate: Date | null
@@ -213,7 +213,7 @@ export type UserWhereInput = {
   OR?: Prisma.UserWhereInput[]
   NOT?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
   id?: Prisma.StringFilter<"User"> | string
-  phone?: Prisma.StringFilter<"User"> | string
+  phone?: Prisma.StringNullableFilter<"User"> | string | null
   firstName?: Prisma.StringNullableFilter<"User"> | string | null
   lastName?: Prisma.StringNullableFilter<"User"> | string | null
   birthDate?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
@@ -232,7 +232,7 @@ export type UserWhereInput = {
 
 export type UserOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  phone?: Prisma.SortOrder
+  phone?: Prisma.SortOrderInput | Prisma.SortOrder
   firstName?: Prisma.SortOrderInput | Prisma.SortOrder
   lastName?: Prisma.SortOrderInput | Prisma.SortOrder
   birthDate?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -273,7 +273,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
 
 export type UserOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  phone?: Prisma.SortOrder
+  phone?: Prisma.SortOrderInput | Prisma.SortOrder
   firstName?: Prisma.SortOrderInput | Prisma.SortOrder
   lastName?: Prisma.SortOrderInput | Prisma.SortOrder
   birthDate?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -292,7 +292,7 @@ export type UserScalarWhereWithAggregatesInput = {
   OR?: Prisma.UserScalarWhereWithAggregatesInput[]
   NOT?: Prisma.UserScalarWhereWithAggregatesInput | Prisma.UserScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"User"> | string
-  phone?: Prisma.StringWithAggregatesFilter<"User"> | string
+  phone?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   firstName?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   lastName?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   birthDate?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
@@ -305,7 +305,7 @@ export type UserScalarWhereWithAggregatesInput = {
 
 export type UserCreateInput = {
   id?: string
-  phone: string
+  phone?: string | null
   firstName?: string | null
   lastName?: string | null
   birthDate?: Date | string | null
@@ -324,7 +324,7 @@ export type UserCreateInput = {
 
 export type UserUncheckedCreateInput = {
   id?: string
-  phone: string
+  phone?: string | null
   firstName?: string | null
   lastName?: string | null
   birthDate?: Date | string | null
@@ -343,7 +343,7 @@ export type UserUncheckedCreateInput = {
 
 export type UserUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -362,7 +362,7 @@ export type UserUpdateInput = {
 
 export type UserUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -381,7 +381,7 @@ export type UserUncheckedUpdateInput = {
 
 export type UserCreateManyInput = {
   id?: string
-  phone: string
+  phone?: string | null
   firstName?: string | null
   lastName?: string | null
   birthDate?: Date | string | null
@@ -394,7 +394,7 @@ export type UserCreateManyInput = {
 
 export type UserUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -407,7 +407,7 @@ export type UserUpdateManyMutationInput = {
 
 export type UserUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -579,7 +579,7 @@ export type UserUpdateOneWithoutReviewedRegistrationsNestedInput = {
 
 export type UserCreateWithoutPushSubscriptionsInput = {
   id?: string
-  phone: string
+  phone?: string | null
   firstName?: string | null
   lastName?: string | null
   birthDate?: Date | string | null
@@ -597,7 +597,7 @@ export type UserCreateWithoutPushSubscriptionsInput = {
 
 export type UserUncheckedCreateWithoutPushSubscriptionsInput = {
   id?: string
-  phone: string
+  phone?: string | null
   firstName?: string | null
   lastName?: string | null
   birthDate?: Date | string | null
@@ -631,7 +631,7 @@ export type UserUpdateToOneWithWhereWithoutPushSubscriptionsInput = {
 
 export type UserUpdateWithoutPushSubscriptionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -649,7 +649,7 @@ export type UserUpdateWithoutPushSubscriptionsInput = {
 
 export type UserUncheckedUpdateWithoutPushSubscriptionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -667,7 +667,7 @@ export type UserUncheckedUpdateWithoutPushSubscriptionsInput = {
 
 export type UserCreateWithoutSalonMembershipsInput = {
   id?: string
-  phone: string
+  phone?: string | null
   firstName?: string | null
   lastName?: string | null
   birthDate?: Date | string | null
@@ -685,7 +685,7 @@ export type UserCreateWithoutSalonMembershipsInput = {
 
 export type UserUncheckedCreateWithoutSalonMembershipsInput = {
   id?: string
-  phone: string
+  phone?: string | null
   firstName?: string | null
   lastName?: string | null
   birthDate?: Date | string | null
@@ -719,7 +719,7 @@ export type UserUpdateToOneWithWhereWithoutSalonMembershipsInput = {
 
 export type UserUpdateWithoutSalonMembershipsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -737,7 +737,7 @@ export type UserUpdateWithoutSalonMembershipsInput = {
 
 export type UserUncheckedUpdateWithoutSalonMembershipsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -755,7 +755,7 @@ export type UserUncheckedUpdateWithoutSalonMembershipsInput = {
 
 export type UserCreateWithoutCustomerInput = {
   id?: string
-  phone: string
+  phone?: string | null
   firstName?: string | null
   lastName?: string | null
   birthDate?: Date | string | null
@@ -773,7 +773,7 @@ export type UserCreateWithoutCustomerInput = {
 
 export type UserUncheckedCreateWithoutCustomerInput = {
   id?: string
-  phone: string
+  phone?: string | null
   firstName?: string | null
   lastName?: string | null
   birthDate?: Date | string | null
@@ -807,7 +807,7 @@ export type UserUpdateToOneWithWhereWithoutCustomerInput = {
 
 export type UserUpdateWithoutCustomerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -825,7 +825,7 @@ export type UserUpdateWithoutCustomerInput = {
 
 export type UserUncheckedUpdateWithoutCustomerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -843,7 +843,7 @@ export type UserUncheckedUpdateWithoutCustomerInput = {
 
 export type UserCreateWithoutBarberInput = {
   id?: string
-  phone: string
+  phone?: string | null
   firstName?: string | null
   lastName?: string | null
   birthDate?: Date | string | null
@@ -861,7 +861,7 @@ export type UserCreateWithoutBarberInput = {
 
 export type UserUncheckedCreateWithoutBarberInput = {
   id?: string
-  phone: string
+  phone?: string | null
   firstName?: string | null
   lastName?: string | null
   birthDate?: Date | string | null
@@ -895,7 +895,7 @@ export type UserUpdateToOneWithWhereWithoutBarberInput = {
 
 export type UserUpdateWithoutBarberInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -913,7 +913,7 @@ export type UserUpdateWithoutBarberInput = {
 
 export type UserUncheckedUpdateWithoutBarberInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -931,7 +931,7 @@ export type UserUncheckedUpdateWithoutBarberInput = {
 
 export type UserCreateWithoutRegistrationRequestsInput = {
   id?: string
-  phone: string
+  phone?: string | null
   firstName?: string | null
   lastName?: string | null
   birthDate?: Date | string | null
@@ -949,7 +949,7 @@ export type UserCreateWithoutRegistrationRequestsInput = {
 
 export type UserUncheckedCreateWithoutRegistrationRequestsInput = {
   id?: string
-  phone: string
+  phone?: string | null
   firstName?: string | null
   lastName?: string | null
   birthDate?: Date | string | null
@@ -972,7 +972,7 @@ export type UserCreateOrConnectWithoutRegistrationRequestsInput = {
 
 export type UserCreateWithoutReviewedRegistrationsInput = {
   id?: string
-  phone: string
+  phone?: string | null
   firstName?: string | null
   lastName?: string | null
   birthDate?: Date | string | null
@@ -990,7 +990,7 @@ export type UserCreateWithoutReviewedRegistrationsInput = {
 
 export type UserUncheckedCreateWithoutReviewedRegistrationsInput = {
   id?: string
-  phone: string
+  phone?: string | null
   firstName?: string | null
   lastName?: string | null
   birthDate?: Date | string | null
@@ -1024,7 +1024,7 @@ export type UserUpdateToOneWithWhereWithoutRegistrationRequestsInput = {
 
 export type UserUpdateWithoutRegistrationRequestsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1042,7 +1042,7 @@ export type UserUpdateWithoutRegistrationRequestsInput = {
 
 export type UserUncheckedUpdateWithoutRegistrationRequestsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1071,7 +1071,7 @@ export type UserUpdateToOneWithWhereWithoutReviewedRegistrationsInput = {
 
 export type UserUpdateWithoutReviewedRegistrationsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1089,7 +1089,7 @@ export type UserUpdateWithoutReviewedRegistrationsInput = {
 
 export type UserUncheckedUpdateWithoutReviewedRegistrationsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1247,7 +1247,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    phone: string
+    phone: string | null
     firstName: string | null
     lastName: string | null
     birthDate: Date | null

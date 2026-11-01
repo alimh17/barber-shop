@@ -90,7 +90,7 @@ export class AuthService {
 
   private async generateTokens(user: {
     id: string;
-    phone: string;
+    phone: string | null;
     role: string;
     firstName?: string | null;
     lastName?: string | null;
