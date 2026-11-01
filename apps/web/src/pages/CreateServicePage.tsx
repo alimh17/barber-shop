@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, Clock3, Save, Scissors } from 'lucide-react';
+import { ArrowRight, Save, Scissors } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { getApiErrorMessage } from '../auth/api';
 import { getSalons } from '../features/salons/api';
 import { createService } from '../features/services/api';
-import { formatNumericInput, parseNumericInput } from '../lib/locale';
+import { formatNumericInput, normalizeDigits, parseNumericInput } from '../lib/locale';
 
 const schema = z.object({
   salonId: z.string().min(1, 'یک سالن انتخاب کنید'),
@@ -18,11 +18,19 @@ const schema = z.object({
     .trim()
     .optional()
     .transform((v) => v || undefined),
-  duration: z.coerce
-    .number()
-    .int('مدت باید عدد صحیح باشد')
-    .positive('مدت باید بیشتر از صفر باشد'),
-  price: z.coerce.number().min(0, 'قیمت نمی‌تواند منفی باشد'),
+  duration: z.preprocess(
+    (value) => typeof value === 'string' ? Number(normalizeDigits(value.trim())) : value,
+    z.number({ error: '\u0645\u062f\u062a \u062e\u062f\u0645\u062a \u0627\u0644\u0632\u0627\u0645\u06cc \u0627\u0633\u062a' })
+      .int('\u0645\u062f\u062a \u062e\u062f\u0645\u062a \u0628\u0627\u06cc\u062f \u0639\u062f\u062f \u0635\u062d\u06cc\u062d \u0628\u0627\u0634\u062f')
+      .min(1, '\u0645\u062f\u062a \u062e\u062f\u0645\u062a \u0628\u0627\u06cc\u062f \u062d\u062f\u0627\u0642\u0644 \u06f1 \u062f\u0642\u06cc\u0642\u0647 \u0628\u0627\u0634\u062f')
+      .max(1440, '\u0645\u062f\u062a \u062e\u062f\u0645\u062a \u0646\u0645\u06cc\u200c\u062a\u0648\u0627\u0646\u062f \u0628\u06cc\u0634\u062a\u0631 \u0627\u0632 \u06f1\u06f4\u06f4\u06f0 \u062f\u0642\u06cc\u0642\u0647 \u0628\u0627\u0634\u062f'),
+  ),
+  price: z.preprocess(
+    (value) => typeof value === 'string' ? Number(normalizeDigits(value.trim()).replace(/,/g, '')) : value,
+    z.number({ error: '\u0642\u06cc\u0645\u062a \u062e\u062f\u0645\u062a \u0627\u0644\u0632\u0627\u0645\u06cc \u0627\u0633\u062a' })
+      .finite('\u0642\u06cc\u0645\u062a \u0646\u0627\u0645\u0639\u062a\u0628\u0631 \u0627\u0633\u062a')
+      .min(0, '\u0642\u06cc\u0645\u062a \u0646\u0645\u06cc\u200c\u062a\u0648\u0627\u0646\u062f \u0645\u0646\u0641\u06cc \u0628\u0627\u0634\u062f'),
+  ),
 });
 type Values = z.input<typeof schema>;
 
@@ -124,10 +132,20 @@ export function CreateServicePage() {
               <span>
                 مدت خدمت (دقیقه) <b>*</b>
               </span>
-              <div className="input-with-icon">
-                <Clock3 />
-                <input type="number" min="1" {...form.register('duration')} />
-              </div>
+              <input
+                type="text"
+                inputMode="numeric"
+                dir="ltr"
+                autoComplete="off"
+                aria-invalid={Boolean(error('duration'))}
+                placeholder="30"
+                {...form.register('duration', {
+                  setValueAs: (value: string) => {
+                    const normalized = normalizeDigits(String(value).trim());
+                    return normalized === '' ? undefined : /^\d+$/.test(normalized) ? Number(normalized) : Number.NaN;
+                  },
+                })}
+              />
               {error('duration') ? <small>{error('duration')}</small> : null}
             </label>
             <label
