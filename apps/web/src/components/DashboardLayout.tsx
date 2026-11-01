@@ -67,6 +67,7 @@ export function DashboardLayout() {
       : []),
     ...(isAdmin
       ? [
+          { to: '/services', label: '\u0645\u062f\u06cc\u0631\u06cc\u062a \u062e\u062f\u0645\u0627\u062a', icon: Scissors },
           { to: '/services/new', label: 'خدمت جدید', icon: CirclePlus },
           { to: '/barbers/new', label: 'آرایشگر جدید', icon: UserRoundPlus },
           { to: '/team', label: 'مدیریت تیم', icon: Scissors },

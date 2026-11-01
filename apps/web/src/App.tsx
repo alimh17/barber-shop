@@ -8,6 +8,7 @@ import { CreateAppointmentPage } from './pages/CreateAppointmentPage';
 import { CreateBarberPage } from './pages/CreateBarberPage';
 import { CreateSalonPage } from './pages/CreateSalonPage';
 import { CreateServicePage } from './pages/CreateServicePage';
+import { ServicesPage } from './pages/ServicesPage';
 import { CustomersPage } from './pages/CustomersPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
@@ -63,6 +64,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/services" element={<ProtectedRoute allowedRoles={[...adminRoles]}><ServicesPage /></ProtectedRoute>} />
             <Route
               path="/services/new"
               element={

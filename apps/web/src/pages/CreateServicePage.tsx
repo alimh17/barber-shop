@@ -45,7 +45,7 @@ export function CreateServicePage() {
     onSuccess: async (service) => {
       await queryClient.invalidateQueries({ queryKey: ['services'] });
       toast.success(`خدمت «${service.name}» ایجاد شد`);
-      navigate('/dashboard');
+      navigate('/services');
     },
     onError: (error) =>
       toast.error(

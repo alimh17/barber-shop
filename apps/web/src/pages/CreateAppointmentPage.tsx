@@ -201,6 +201,9 @@ export function CreateAppointmentPage() {
                 ))}
               </select>
             </label>
+            {barberId && servicesQuery.isPending && <p className="inline-note">{'\u062f\u0631 \u062d\u0627\u0644 \u062f\u0631\u06cc\u0627\u0641\u062a \u062e\u062f\u0645\u0627\u062a...'}</p>}
+            {barberId && servicesQuery.isError && <p className="form-api-error">{'\u062f\u0631\u06cc\u0627\u0641\u062a \u062e\u062f\u0645\u0627\u062a \u0628\u0627 \u062e\u0637\u0627 \u0645\u0648\u0627\u062c\u0647 \u0634\u062f.'} <button type="button" onClick={() => void servicesQuery.refetch()}>{'\u062a\u0644\u0627\u0634 \u062f\u0648\u0628\u0627\u0631\u0647'}</button></p>}
+            {barberId && servicesQuery.isSuccess && services.length === 0 && <p className="inline-note">{'\u0647\u06cc\u0686 \u062e\u062f\u0645\u062a \u0641\u0639\u0627\u0644\u06cc \u0628\u0647 \u0627\u06cc\u0646 \u0622\u0631\u0627\u06cc\u0634\u06af\u0631 \u0627\u062e\u062a\u0635\u0627\u0635 \u0646\u06cc\u0627\u0641\u062a\u0647 \u0627\u0633\u062a.'} <Link to="/services">{'\u0645\u062f\u06cc\u0631\u06cc\u062a \u062e\u062f\u0645\u0627\u062a'}</Link></p>}
             <label className="form-field full-width">
               <span>
                 تاریخ <b>*</b>
