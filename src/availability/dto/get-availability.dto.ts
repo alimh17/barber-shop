@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsDateString,
   IsInt,
@@ -25,6 +26,7 @@ export class GetAvailabilityDto {
   date: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(5)
   @Max(120)
