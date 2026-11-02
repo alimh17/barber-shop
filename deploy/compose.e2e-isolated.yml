@@ -41,7 +41,7 @@ services:
   api:
     image: barbershop-api-api:latest
     environment:
-      NODE_ENV: test
+      NODE_ENV: development
       PORT: "3000"
       DATABASE_URL: postgresql://e2e:${E2E_DB_PASSWORD}@postgres:5432/barbershop_e2e?schema=public
       REDIS_URL: redis://:${E2E_REDIS_PASSWORD}@redis:6379/0
