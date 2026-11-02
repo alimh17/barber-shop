@@ -1,4 +1,4 @@
-﻿services:
+services:
   grafana:
     image: grafana/grafana:11.6.5
     restart: unless-stopped

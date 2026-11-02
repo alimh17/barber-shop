@@ -1,4 +1,4 @@
-﻿local.file_match "docker" {
+local.file_match "docker" {
   path_targets = [{ __path__ = "/var/lib/docker/containers/*/*-json.log", job = "docker" }]
   sync_period = "10s"
 }
