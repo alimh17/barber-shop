@@ -7,7 +7,7 @@ const serviceName = process.env.E2E_SERVICE_NAME
 const barberName = process.env.E2E_BARBER_NAME
 
 async function login(page: Page, phone: string) {
-  await page.goto('/login')
+  await page.goto('/login?salon=e2e-playwright-salon')
   await page.locator('#phone').fill(phone)
   await page.locator('#phone').press('Enter')
   await expect(page.locator('#code')).toBeVisible()
