@@ -77,6 +77,6 @@ services:
     mem_limit: 64m
 networks:
   e2e_backend:
-    internal: true
+    driver: bridge
 volumes:
   e2e_postgres:
