@@ -16,6 +16,7 @@ import { RequestOtpDto } from './dto/request-otp.dto.js';
 import { VerifyOtpDto } from './dto/verify-otp.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { OtpRateLimitGuard } from './guards/otp-rate-limit.guard.js';
+import { RefreshOriginGuard } from './guards/refresh-origin.guard.js';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -62,6 +63,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @UseGuards(RefreshOriginGuard)
   @ApiOperation({
     summary: 'Refresh access',
     description: 'Validates a refresh token and rotates the user token pair.',
