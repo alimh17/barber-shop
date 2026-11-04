@@ -19,3 +19,19 @@ Status: Candidate only; do not deploy to staging until isolated regression is gr
 
 ## Limitations
 The guard rejects explicitly untrusted Origin headers, but permits requests with no Origin for non-browser compatibility. This is defense-in-depth, not a complete CSRF strategy. Additional Fetch Metadata checks or a CSRF token policy may be appropriate for cookie-authenticated actions.
+
+## Staging rollout 2026-11-04
+- API candidate: `barbershop-api-api:e2e-csrf-guard`; use `deploy/compose.csrf-staging.yml` alongside base and HTTPS overlays.
+- Previous API: `barbershop-api-api:rollback-20261104`, image digest `sha256:1cb46c719b8d9176dc28706f0b2605091678182c1aaf4bbfba56a38755b0c744`.
+- Explicit CORS allowlist: `https://staging.barbers-agency.ir,https://api-staging.barbers-agency.ir`.
+- HTTPS Nginx overlay enabled; both staging health endpoints returned HTTP 200.
+- Read-only browser smoke on actual staging: 5/5 passed.
+
+Rollback (API only, no database changes):
+```bash
+cd /opt/barbershop-api
+docker compose -f docker-compose.yml -f deploy/compose.https.yml -f deploy/compose.csrf-rollback.yml config --quiet
+docker compose -f docker-compose.yml -f deploy/compose.https.yml -f deploy/compose.csrf-rollback.yml up -d --no-deps api
+curl -fsS https://staging.barbers-agency.ir/api/health
+```
+Do not use `down --volumes`, run migrations, or recreate PostgreSQL/Redis for rollback. Keep monitoring services untouched.

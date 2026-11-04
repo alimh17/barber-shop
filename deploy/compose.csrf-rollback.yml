@@ -1,0 +1,5 @@
+services:
+  api:
+    image: barbershop-api-api:rollback-20261104
+    environment:
+      CORS_ORIGINS: https://staging.barbers-agency.ir,https://api-staging.barbers-agency.ir
