@@ -1,0 +1,89 @@
+name: Deploy staging
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: staging-deployment
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: >-
+      (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+      && vars.STAGING_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 35
+    steps:
+      - name: Select tested main revision
+        id: revision
+        env:
+          EVENT: ${{ github.event_name }}
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+          CURRENT_SHA: ${{ github.sha }}
+        run: |
+          if [[ "$EVENT" == workflow_run ]]; then
+            echo "sha=$TESTED_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=$CURRENT_SHA" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.revision.outputs.sha }}
+          persist-credentials: false
+      - name: Configure pinned SSH host and key
+        env:
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.STAGING_KNOWN_HOSTS }}
+          HOST: ${{ secrets.STAGING_HOST }}
+          USER: ${{ secrets.STAGING_USER }}
+        run: |
+          test -n "$SSH_KEY" && test -n "$KNOWN_HOSTS" && test -n "$HOST" && test -n "$USER"
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_staging
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_staging ~/.ssh/known_hosts
+          echo "STAGING_HOST=$HOST" >> "$GITHUB_ENV"
+          echo "STAGING_USER=$USER" >> "$GITHUB_ENV"
+      - name: Upload reviewed deployment scripts
+        run: |
+          scp -i ~/.ssh/id_staging -o StrictHostKeyChecking=yes scripts/deploy-staging.sh scripts/rollback-staging.sh "$STAGING_USER@$STAGING_HOST:/home/deploy/"
+      - name: Deploy and verify origin health
+        id: deploy
+        run: |
+          ssh -i ~/.ssh/id_staging -o StrictHostKeyChecking=yes "$STAGING_USER@$STAGING_HOST" "bash /home/deploy/deploy-staging.sh '${{ steps.revision.outputs.sha }}'"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.9.1
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Staging read-only browser smoke
+        env:
+          CI: '1'
+          E2E_BASE_URL: https://staging.barbers-agency.ir
+          E2E_API_URL: https://api-staging.barbers-agency.ir/api
+        run: pnpm exec playwright test e2e/staging-readonly.spec.ts --workers=1 --retries=0 --reporter=list
+      - name: Roll back on failed post-deploy smoke
+        if: failure() && steps.deploy.outcome == 'success'
+        run: |
+          ssh -i ~/.ssh/id_staging -o StrictHostKeyChecking=yes "$STAGING_USER@$STAGING_HOST" 'bash /home/deploy/rollback-staging.sh'
+      - name: Upload Playwright evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-playwright
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
