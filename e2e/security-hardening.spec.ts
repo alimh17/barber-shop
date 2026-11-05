@@ -101,7 +101,7 @@ test('stored XSS: salon registration description remains inert on browser render
 })
 
 test('DOM XSS: malicious query string does not execute in login page', async ({ page }) => {
-  await page.goto('/login?salon=' + encodeURIComponent('<img src=x onerror=window.__security_xss_marker=1>'))
+  await page.goto('/login?salon=' + encodeURIComponent('<img src=x onerror=window.__security_xss_marker=1>'), { waitUntil: 'domcontentloaded' })
   await page.waitForTimeout(300)
   expect(await page.evaluate(() => (window as Window & { __security_xss_marker?: number }).__security_xss_marker ?? 0)).toBe(0)
 })

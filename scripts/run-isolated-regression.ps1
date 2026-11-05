@@ -7,7 +7,7 @@ Set-Location (Join-Path $PSScriptRoot '..')
 if (!(Test-Path $SshKey)) { throw "SSH key not found: $SshKey" }
 $sshArgs = @('-i', $SshKey, '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=15')
 $target = "deploy@$HostIp"
-$env:E2E_BASE_URL = 'http://127.0.0.1:18080'
+$env:E2E_BASE_URL = 'http://127.0.0.1:18082'
 $env:E2E_API_URL = "$env:E2E_BASE_URL/api"
 $env:E2E_ISOLATED = '1'
 $env:E2E_PHONE = '09120000981'
@@ -26,12 +26,13 @@ $specs = @(
   'booking.spec.ts',
   'staging-readonly.spec.ts',
   'tenant-browser.spec.ts',
-  'tenant-registration.spec.ts'
+  'tenant-registration.spec.ts',
+  'security-hardening.spec.ts'
 )
 Write-Host 'Uploading E2E-only reset script...'
 & scp @sshArgs 'deploy/reset-e2e-isolated.sh' "${target}:barbershop-e2e/reset-e2e-isolated.sh"
 if ($LASTEXITCODE -ne 0) { throw 'E2E reset script upload failed' }
-$tunnel = Start-Process -FilePath 'ssh' -ArgumentList ($sshArgs + @('-N','-o','ExitOnForwardFailure=yes','-L','18080:127.0.0.1:18080',$target)) -PassThru -WindowStyle Hidden
+$tunnel = Start-Process -FilePath 'ssh' -ArgumentList ($sshArgs + @('-N','-o','ExitOnForwardFailure=yes','-L','18082:127.0.0.1:18080',$target)) -PassThru -WindowStyle Hidden
 $results = @()
 try {
   Start-Sleep -Seconds 3
