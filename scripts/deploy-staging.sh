@@ -24,7 +24,14 @@ OLD_API="$(docker inspect barbershop-api-api-1 --format '{{.Config.Image}}')"
 OLD_WEB="$(docker inspect barbershop-api-nginx-1 --format '{{.Config.Image}}')"
 OLD_DIR="$(readlink -f "$STATE/current" 2>/dev/null || true)"
 if [[ -z "$OLD_DIR" || ! -f "$OLD_DIR/docker-compose.yml" ]]; then
-  OLD_DIR="$ROOT"
+  # Bootstrap from the previously deployed, manually validated staging release.
+  PREVIOUS_IMAGE_SHA="${OLD_API##*:main-}"
+  if [[ "$PREVIOUS_IMAGE_SHA" =~ ^[a-f0-9]{7,40}$ ]] && [[ -f "$HOME/barbershop-release-$PREVIOUS_IMAGE_SHA/docker-compose.yml" ]]; then
+    OLD_DIR="$HOME/barbershop-release-$PREVIOUS_IMAGE_SHA"
+  else
+    echo "Cannot identify previously deployed release from the running API image; refusing to deploy."
+    exit 1
+  fi
 fi
 printf '%s\n' "$OLD_API" > "$BACKUP/previous-api-image"
 printf '%s\n' "$OLD_WEB" > "$BACKUP/previous-nginx-image"
@@ -53,7 +60,8 @@ cp -a "$ROOT/deploy/nginx/staging.conf" "$ROOT/deploy/nginx/default.conf" "$ROOT
 cp -a "$ROOT/deploy/compose.https.yml" "$RELEASE/deploy/compose.https.yml"
 
 # Schema changes require a separate reviewed migration/rollback plan.
-if git diff --name-only "$(cat "$BACKUP/previous-git-sha")" "$SHA" -- prisma/migrations | grep -q .; then
+PREVIOUS_DEPLOYED_SHA="$(git -C "$OLD_DIR" rev-parse HEAD)"
+if git diff --name-only "$PREVIOUS_DEPLOYED_SHA" "$SHA" -- prisma/migrations | grep -q .; then
   echo "Database migrations changed. Stop: run reviewed migration plan first."
   exit 1
 fi
@@ -88,7 +96,7 @@ docker compose -p barbershop-api "${FILES[@]}" up -d --no-build --no-deps --wait
 docker exec barbershop-api-nginx-1 nginx -t
 curl -fsS --retry 3 --retry-delay 2 --max-time 15 https://api-staging.barbers-agency.ir/api/health > /dev/null
 curl -fsS --retry 3 --retry-delay 2 --max-time 15 https://staging.barbers-agency.ir/ > /dev/null
-ln -sfn "$RELEASE" "$STATE/current"
+ln -sfnT "$RELEASE" "$STATE/current"
 printf '%s\n' "$BACKUP" > "$STATE/last-backup"
 SWITCH_STARTED=0
 trap - EXIT
