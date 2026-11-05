@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 
 async function login(page: Page, phone: string) {
- await page.goto('/login')
+ await page.goto('/login?salon=e2e-playwright-salon')
  await page.locator('#phone').fill(phone)
  await page.locator('#phone').press('Enter')
  await expect(page.locator('#code')).toBeVisible()
@@ -43,11 +43,14 @@ test('browser booking buttons, collision prevention, cancellation confirmation a
   await expect(pending).toBeVisible()
   await a.getByRole('button',{name:'در انتظار تأیید'}).click()
   await expect(pending).toBeVisible()
-  a.once('dialog',dialog=>dialog.dismiss())
-  await pending.getByRole('button',{name:'لغو نوبت'}).click()
-  await expect(pending).toBeVisible()
-  a.once('dialog',dialog=>dialog.accept())
-  await pending.getByRole('button',{name:'لغو نوبت'}).click()
+  // Verify the custom confirmation dialog can be dismissed and then accepted.
+  await pending.getByRole('button',{name:'\u0644\u063a\u0648 \u0646\u0648\u0628\u062a'}).click()
+  const modal=pending.locator('.confirm-modal')
+  await expect(modal).toBeVisible()
+  await modal.locator('.confirm-modal-cancel').click()
+  await expect(modal).not.toBeVisible()
+  await pending.getByRole('button',{name:'\u0644\u063a\u0648 \u0646\u0648\u0628\u062a'}).click()
+  await modal.locator('.confirm-modal-accept').click()
   await expect(a.getByText('وضعیت نوبت به «لغو شده» تغییر کرد')).toBeVisible()
   await c.reload()
   await expect(c.getByText('لغو شده').first()).toBeVisible()

@@ -6,7 +6,7 @@ export type AppointmentStatus =
   'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
 
 export interface PersonRef {
-  phone: string;
+  phone: string | null;
   firstName?: string | null;
   lastName?: string | null;
 }
@@ -35,6 +35,7 @@ export interface ManagedUser {
   status: string;
   createdAt: string;
   barber?: { id: string; salonId: string; isActive: boolean } | null;
+  customer?: { id: string } | null;
 }
 
 export interface Paged<T> {
@@ -63,6 +64,7 @@ export interface AvailabilitySlot {
 
 export interface AvailabilityResponse {
   dayOff: boolean;
+  workingHours?: { startTime: string; endTime: string } | null;
   slots: AvailabilitySlot[];
 }
 
@@ -101,7 +103,7 @@ export function personName(person?: PersonRef | null) {
   if (!person) return '—';
   return (
     [person.firstName, person.lastName].filter(Boolean).join(' ') ||
-    person.phone
+    person.phone || '?'
   );
 }
 
@@ -242,4 +244,8 @@ export async function bookAppointment(input: {
 }
 export async function myAppointments() {
   return (await api.get<AppointmentRecord[]>('/appointments/mine')).data;
+}
+
+export async function createWalkInCustomer(input: { salonId: string; name?: string; phone?: string }) {
+  return (await api.post<ManagedUser>('/users/customers', input)).data;
 }

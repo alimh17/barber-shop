@@ -4,7 +4,7 @@ const phone = process.env.E2E_PHONE
 const otp = process.env.E2E_OTP
 
 test('login validates phone number', async ({ page }) => {
-  await page.goto('/login')
+  await page.goto('/login', { waitUntil: 'domcontentloaded' })
   await expect(page.locator('#phone')).toBeVisible()
   await page.locator('#phone').fill('123')
   await page.locator('#phone').press('Enter')
@@ -12,13 +12,15 @@ test('login validates phone number', async ({ page }) => {
 })
 
 test('OTP login sets HttpOnly cookie', async ({ page }) => {
-  test.skip(!phone || !otp, 'Set E2E_PHONE and E2E_OTP for an isolated test account; do not rely on exposed OTP')
+  test.skip(!phone || (!otp && process.env.E2E_ISOLATED !== '1'), 'Requires E2E_PHONE and isolated development OTP or explicit E2E_OTP')
   const salonSlug = process.env.E2E_SALON_SLUG
-  await page.goto(salonSlug ? `/login?salon=${encodeURIComponent(salonSlug)}` : '/login')
+  await page.goto(salonSlug ? `/login?salon=${encodeURIComponent(salonSlug)}` : '/login', { waitUntil: 'domcontentloaded' })
   await page.locator('#phone').fill(phone!)
   await page.locator('#phone').press('Enter')
   await expect(page.locator('#code')).toBeVisible()
-  await page.locator('#code').fill(otp!)
+  const code = otp ?? (await page.locator('.demo-hint b').textContent())?.trim()
+  expect(code, 'Only the isolated mock-SMS environment may expose OTP').toBeTruthy()
+  await page.locator('#code').fill(code!)
   await page.locator('#code').press('Enter')
   await expect(page).toHaveURL(/\/dashboard/)
   const cookies = await page.context().cookies()

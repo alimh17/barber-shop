@@ -7,6 +7,7 @@ import { getApiErrorMessage } from '../auth/api';
 import { PersianDateInput } from '../components/PersianDateInput';
 import {
   createAdminAppointment,
+  createWalkInCustomer,
   getAvailability,
   getBarberServices,
   listUsers,
@@ -31,6 +32,9 @@ export function CreateAppointmentPage() {
   const [customerSearch, setCustomerSearch] = useState('');
   const [customer, setCustomer] = useState<ManagedUser | null>(null);
   const [note, setNote] = useState('');
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState('');
+  const [newCustomerPhone, setNewCustomerPhone] = useState('');
 
   const barbersQuery = useQuery({
     queryKey: ['team', 'barbers'],
@@ -92,11 +96,16 @@ export function CreateAppointmentPage() {
     enabled: customerTerm.length >= 3,
   });
   const customerOptions = customersQuery.data?.items ?? [];
+  const registerCustomer = useMutation({
+    mutationFn: () => createWalkInCustomer({ salonId: selectedBarber?.salonId ?? '', name: newCustomerName.trim() || undefined, phone: newCustomerPhone.trim() || undefined }),
+    onSuccess: async (user) => { setCustomer(user); setCustomerSearch(''); setShowNewCustomer(false); await queryClient.invalidateQueries({ queryKey: ['customer-search'] }); toast.success('\u0645\u0634\u062a\u0631\u06cc \u062b\u0628\u062a \u0634\u062f'); },
+    onError: error => toast.error(getApiErrorMessage(error, '\u0646\u0627\u0645 \u0645\u0634\u062a\u0631\u06cc ????? ???')),
+  });
 
   const mutation = useMutation({
     mutationFn: () =>
       createAdminAppointment({
-        customerId: customer?.id ?? '',
+        customerId: customer?.customer?.id ?? '',
         barberId,
         serviceId,
         startAt,
@@ -117,7 +126,7 @@ export function CreateAppointmentPage() {
   });
 
   const canSubmit =
-    Boolean(customer && barberId && serviceId && startAt) &&
+    Boolean(customer?.customer?.id && barberId && serviceId && startAt) &&
     !mutation.isPending;
 
   const pickBarber = (id: string) => {
@@ -201,6 +210,9 @@ export function CreateAppointmentPage() {
                 ))}
               </select>
             </label>
+            {barberId && servicesQuery.isPending && <p className="inline-note">{'\u062f\u0631 \u062d\u0627\u0644 \u062f\u0631\u06cc\u0627\u0641\u062a \u062e\u062f\u0645\u0627\u062a...'}</p>}
+            {barberId && servicesQuery.isError && <p className="form-api-error">{'\u062f\u0631\u06cc\u0627\u0641\u062a \u062e\u062f\u0645\u0627\u062a \u0628\u0627 \u062e\u0637\u0627 \u0645\u0648\u0627\u062c\u0647 \u0634\u062f.'} <button type="button" onClick={() => void servicesQuery.refetch()}>{'\u062a\u0644\u0627\u0634 \u062f\u0648\u0628\u0627\u0631\u0647'}</button></p>}
+            {barberId && servicesQuery.isSuccess && services.length === 0 && <p className="inline-note">{'\u0647\u06cc\u0686 \u062e\u062f\u0645\u062a \u0641\u0639\u0627\u0644\u06cc \u0628\u0647 \u0627\u06cc\u0646 \u0622\u0631\u0627\u06cc\u0634\u06af\u0631 \u0627\u062e\u062a\u0635\u0627\u0635 \u0646\u06cc\u0627\u0641\u062a\u0647 \u0627\u0633\u062a.'} <Link to="/services">{'\u0645\u062f\u06cc\u0631\u06cc\u062a \u062e\u062f\u0645\u0627\u062a'}</Link></p>}
             <label className="form-field full-width">
               <span>
                 تاریخ <b>*</b>
@@ -240,7 +252,8 @@ export function CreateAppointmentPage() {
           {slotsQuery.data?.dayOff ? (
             <p className="inline-note">این روز برای آرایشگر تعطیل است.</p>
           ) : null}
-          {slotsQuery.data && !slotsQuery.data.dayOff && slots.length === 0 ? (
+          {slotsQuery.data && !slotsQuery.data.dayOff && !slotsQuery.data.workingHours ? <p className="inline-note">{'\u0628\u0631\u0627\u06cc \u0627\u06cc\u0646 \u0631\u0648\u0632 \u0633\u0627\u0639\u0627\u062a \u06a9\u0627\u0631\u06cc \u0622\u0631\u0627\u06cc\u0634\u06af\u0631 \u062b\u0628\u062a \u0646\u0634\u062f\u0647 \u0627\u0633\u062a.'} <Link to="/working-hours">{'\u062a\u0646\u0638\u06cc\u0645 \u0633\u0627\u0639\u0627\u062a \u06a9\u0627\u0631\u06cc'}</Link></p> : null}
+          {slotsQuery.data && !slotsQuery.data.dayOff && !!slotsQuery.data.workingHours && slots.length === 0 ? (
             <p className="inline-note">در این روز زمان آزادی نیست.</p>
           ) : null}
           {slots.length ? (
@@ -291,6 +304,23 @@ export function CreateAppointmentPage() {
           customerOptions.length === 0 ? (
             <p className="inline-note">مشتری‌ای با این مشخصات پیدا نشد.</p>
           ) : null}
+          <div className="walkin-customer">
+            <button type="button" className="walkin-toggle" aria-expanded={showNewCustomer} onClick={() => setShowNewCustomer(value => !value)}>
+              {showNewCustomer ? '\u0628\u0633\u062a\u0646 \u0641\u0631\u0645' : '+ \u062b\u0628\u062a \u0645\u0634\u062a\u0631\u06cc \u062c\u062f\u06cc\u062f'}
+            </button>
+            {showNewCustomer && (
+              <div className="walkin-panel">
+                <div className="walkin-fields">
+                  <label className="form-field"><span>{'\u0646\u0627\u0645 \u0645\u0634\u062a\u0631\u06cc'}</span><input value={newCustomerName} onChange={event => setNewCustomerName(event.target.value)} placeholder={'\u0646\u0627\u0645 \u0645\u0634\u062a\u0631\u06cc'} /></label>
+                  <label className="form-field"><span>{'\u0634\u0645\u0627\u0631\u0647 \u0645\u0648\u0628\u0627\u06cc\u0644'}</span><input dir="ltr" value={newCustomerPhone} onChange={event => setNewCustomerPhone(event.target.value)} placeholder="09123456789" /></label>
+                </div>
+                <p className="walkin-hint">{'\u0648\u0627\u0631\u062f \u06a9\u0631\u062f\u0646 \u0646\u0627\u0645 \u06cc\u0627 \u0634\u0645\u0627\u0631\u0647 \u0645\u0648\u0628\u0627\u06cc\u0644 \u06a9\u0627\u0641\u06cc \u0627\u0633\u062a.'}</p>
+                <button type="button" className="walkin-submit" disabled={!selectedBarber || registerCustomer.isPending || (!newCustomerName.trim() && !newCustomerPhone.trim())} onClick={() => registerCustomer.mutate()}>
+                  {registerCustomer.isPending ? '\u062f\u0631 \u062d\u0627\u0644 \u062b\u0628\u062a...' : '\u062b\u0628\u062a \u0648 \u0627\u0646\u062a\u062e\u0627\u0628 \u0645\u0634\u062a\u0631\u06cc'}
+                </button>
+              </div>
+            )}
+          </div>
           {customerOptions.length ? (
             <div className="picker-list">
               {customerOptions.map((c) => (

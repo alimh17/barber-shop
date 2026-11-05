@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -23,6 +24,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { UserRole } from '../generated/prisma/client.js';
 import { ListUsersDto } from './dto/list-users.dto.js';
+import { CreateWalkInCustomerDto } from './dto/create-walk-in-customer.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto.js';
 import { UsersService } from './users.service.js';
@@ -38,8 +40,15 @@ import { UsersService } from './users.service.js';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @Post('customers')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.BARBER)
+  @ApiOperation({ summary: 'Create a salon customer with a name or mobile number' })
+  createWalkInCustomer(@CurrentUser() actor: CurrentUserData, @Body() dto: CreateWalkInCustomerDto) {
+    return this.usersService.createWalkInCustomer(actor.id, actor.role, dto);
+  }
+
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.BARBER)
   @ApiOperation({
     summary: 'List users',
     description:

@@ -3,6 +3,7 @@ import {
   CalendarDays,
   CirclePlus,
   LayoutDashboard,
+  Link2,
   ChartNoAxesCombined,
   Bell,
   LogOut,
@@ -36,12 +37,14 @@ export function DashboardLayout() {
     [user.firstName, user.lastName].filter(Boolean).join(' ') ||
     user.phone;
   const isAdmin = ['SUPER_ADMIN', 'ADMIN'].includes(user.role);
+  const isSalonApplicant = user.role === 'CUSTOMER' && user.hasSalonMembership !== true;
   const links = [
     { to: '/dashboard', label: 'نمای کلی', icon: LayoutDashboard },
     { to: '/profile', label: 'پروفایل من', icon: UserRound },
     { to: '/settings/notifications', label: 'اعلان‌ها', icon: Bell },
     ...(isAdmin
       ? [
+          { to: '/salon-link', label: '\u0644\u06cc\u0646\u06a9 \u0631\u0632\u0631\u0648 \u0633\u0627\u0644\u0646', icon: Link2 },
           { to: '/appointments', label: 'نوبت‌ها', icon: CalendarDays },
           { to: '/customers', label: 'مشتریان', icon: Users },
           {
@@ -51,19 +54,23 @@ export function DashboardLayout() {
           },
         ]
       : []),
-    ...(user.role === 'CUSTOMER'
+    ...(user.role === 'CUSTOMER' ? [{ to: '/register-salon', label: "\u062b\u0628\u062a \u0633\u0627\u0644\u0646 \u062c\u062f\u06cc\u062f", icon: Building2 }] : []),
+    ...(user.role === 'CUSTOMER' && !isSalonApplicant
       ? [{ to: '/book', label: 'رزرو نوبت', icon: CalendarDays }]
       : []),
     ...(user.role === 'BARBER'
-      ? [{ to: '/my-revenue', label: 'درآمد من', icon: ChartNoAxesCombined }, { to: '/appointments', label: 'درخواست‌های نوبت', icon: CalendarDays }]
+      ? [{ to: '/appointments/new', label: '\u062b\u0628\u062a \u0646\u0648\u0628\u062a \u062c\u062f\u06cc\u062f', icon: CalendarDays }, { to: '/my-revenue', label: 'درآمد من', icon: ChartNoAxesCombined }, { to: '/appointments', label: 'درخواست‌های نوبت', icon: CalendarDays }]
       : []),
     ...(user.role === 'SUPER_ADMIN'
-      ? [{ to: '/salons/new', label: 'سالن جدید', icon: Building2 }]
+      ? [{ to: '/salon-registrations', label: '\u062f\u0631\u062e\u0648\u0627\u0633\u062a\u200c\u0647\u0627\u06cc \u0633\u0627\u0644\u0646', icon: Building2 },
+          { to: '/salons/new', label: 'سالن جدید', icon: Building2 }]
       : []),
     ...(isAdmin
       ? [
+          { to: '/services', label: '\u0645\u062f\u06cc\u0631\u06cc\u062a \u062e\u062f\u0645\u0627\u062a', icon: Scissors },
           { to: '/services/new', label: 'خدمت جدید', icon: CirclePlus },
           { to: '/barbers/new', label: 'آرایشگر جدید', icon: UserRoundPlus },
+          { to: '/working-hours', label: '\u0633\u0627\u0639\u0627\u062a \u06a9\u0627\u0631\u06cc', icon: CalendarDays },
           { to: '/team', label: 'مدیریت تیم', icon: Scissors },
           { to: '/settings/sms', label: 'پیامک سالن', icon: Settings },
         ]

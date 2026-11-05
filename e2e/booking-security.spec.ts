@@ -7,11 +7,11 @@ const ids = {
   serviceId: '0869aea3-2701-4403-9f3f-ed6b27fe86a7',
 }
 async function token(request: APIRequestContext, phone: string) {
-  const otpResponse = await request.post(apiBase + '/auth/request-otp', { data: { phone } })
+  const otpResponse = await request.post(apiBase + '/auth/request-otp', { data: { phone, salonSlug: 'e2e-playwright-salon' } })
   expect(otpResponse.ok()).toBeTruthy()
   const otp = (await otpResponse.json()).otp
   expect(otp, 'Test requires development OTP, never use production').toBeTruthy()
-  const response = await request.post(apiBase + '/auth/verify-otp', { data: { phone, code: otp } })
+  const response = await request.post(apiBase + '/auth/verify-otp', { data: { phone, code: otp, salonSlug: 'e2e-playwright-salon' } })
   expect(response.ok()).toBeTruthy()
   return (await response.json()).accessToken as string
 }

@@ -44,6 +44,13 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
+    // Correlate frontend failures with server logs without exposing tokens or payloads.
+    const requestId = error.response?.headers?.['x-request-id'] ??
+      (error.response?.data && typeof error.response.data === 'object' &&
+       'requestId' in error.response.data ? String(error.response.data.requestId) : undefined);
+    if (error.response?.status && error.response.status >= 500) {
+      console.error('[API error]', { status: error.response.status, requestId: requestId ?? 'unavailable' });
+    }
     const request = error.config as
       (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
     if (
@@ -68,12 +75,12 @@ api.interceptors.response.use(
   },
 );
 
-export async function requestOtp(phone: string, salonSlug?: string) {
+export async function requestOtp(phone: string, salonSlug?: string, purpose?: string) {
   const { data } = await api.post<{
     message: string;
     expiresAt: string;
     otp?: string;
-  }>('/auth/request-otp', { phone, salonSlug });
+  }>('/auth/request-otp', { phone, salonSlug, purpose });
   const expiresIn = Math.max(
     0,
     Math.ceil((new Date(data.expiresAt).getTime() - Date.now()) / 1000),
@@ -85,11 +92,13 @@ export async function verifyOtp(
   phone: string,
   code: string,
   salonSlug?: string,
+  purpose?: string,
 ) {
   const { data } = await api.post<AuthResponse>('/auth/verify-otp', {
     phone,
     code,
     salonSlug,
+    purpose,
   });
   return toSession(data);
 }

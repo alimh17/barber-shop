@@ -2,11 +2,15 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
+import { httpTelemetry } from './observability/http-telemetry.middleware.js';
+import { HttpErrorFilter } from './observability/http-error.filter.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api');
+  app.use(httpTelemetry);
+  app.useGlobalFilters(new HttpErrorFilter());
 
   const allowedOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:5173')
     .split(',')
@@ -15,6 +19,7 @@ async function bootstrap() {
   app.enableCors({
     origin: allowedOrigins,
     credentials: true,
+    exposedHeaders: ['X-Request-Id'],
   });
 
   const trustProxyHops = Number.parseInt(process.env.TRUST_PROXY_HOPS ?? '0', 10);

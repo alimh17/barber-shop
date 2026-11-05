@@ -4,11 +4,11 @@ const A={salonId:'e409b649-2225-43f4-a20d-d7e94ec8518f',barberId:'0fb2982d-044d-
 const A2={...A,barberId:'0ca832c7-0e90-4583-8ccd-44379f373313'}
 const B={salonId:'45a736f3-71f9-4d61-b0d4-95c78a121b66',barberId:'59d14e95-83fc-450c-b273-21a9e32754aa',serviceId:'00764a10-4ef1-4358-8d43-6df703edb93c'}
 async function auth(r:APIRequestContext,phone:string){
- const otp=await r.post(base+'/auth/request-otp',{data:{phone}})
+ const otp=await r.post(base+'/auth/request-otp',{data:{phone,salonSlug:phone==='09120000987'||phone==='09120000986'||phone==='09120000984'?'e2e-playwright-salon-b':'e2e-playwright-salon'}})
  expect(otp.ok()).toBeTruthy()
  const code=(await otp.json()).otp
  expect(code,'Only development OTP').toBeTruthy()
- const verified=await r.post(base+'/auth/verify-otp',{data:{phone,code}})
+ const verified=await r.post(base+'/auth/verify-otp',{data:{phone,code,salonSlug:phone==='09120000987'||phone==='09120000986'||phone==='09120000984'?'e2e-playwright-salon-b':'e2e-playwright-salon'}})
  expect(verified.ok()).toBeTruthy()
  return {Authorization:'Bearer '+(await verified.json()).accessToken}
 }

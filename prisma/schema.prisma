@@ -14,6 +14,12 @@ enum UserRole {
   CUSTOMER
 }
 
+enum SalonRegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum UserStatus {
   ACTIVE
   INACTIVE
@@ -40,7 +46,7 @@ enum DayOfWeek {
 
 model User {
   id               String     @id @default(uuid())
-  phone            String     @unique
+  phone            String?    @unique
   firstName        String?
   lastName         String?
   birthDate        DateTime?  @db.Date
@@ -48,6 +54,8 @@ model User {
   role             UserRole   @default(CUSTOMER)
   status           UserStatus @default(ACTIVE)
 
+  registrationRequests SalonRegistrationRequest[] @relation("ApplicantRegistrations")
+  reviewedRegistrations SalonRegistrationRequest[] @relation("ReviewedRegistrations")
   customer          Customer?
   barber            Barber?
   salonMemberships  SalonMembership[]
@@ -292,4 +300,25 @@ model OtpRateLimitEntry {
   resetAt DateTime
 
   @@index([resetAt])
+}
+
+model SalonRegistrationRequest {
+  id String @id @default(uuid())
+  applicantId String
+  applicant User @relation("ApplicantRegistrations", fields: [applicantId], references: [id], onDelete: Cascade)
+  reviewedById String?
+  reviewedBy User? @relation("ReviewedRegistrations", fields: [reviewedById], references: [id], onDelete: SetNull)
+  name String
+  slug String
+  phone String?
+  address String?
+  description String?
+  status SalonRegistrationStatus @default(PENDING)
+  rejectionReason String?
+  salonId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  reviewedAt DateTime?
+  @@index([applicantId, status])
+  @@index([status, createdAt])
 }

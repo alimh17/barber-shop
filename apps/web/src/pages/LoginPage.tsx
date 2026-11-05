@@ -34,6 +34,7 @@ type OtpForm = z.infer<typeof otpSchema>;
 export function LoginPage() {
   const salonSlug =
     new URLSearchParams(useLocation().search).get('salon') ?? undefined;
+  const purpose = new URLSearchParams(useLocation().search).get('purpose') === 'salon-registration' ? 'salon-registration' : undefined;
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phone, setPhone] = useState('');
   const [seconds, setSeconds] = useState(0);
@@ -60,7 +61,7 @@ export function LoginPage() {
   if (session) return <Navigate to="/dashboard" replace />;
   const submitPhone = phoneForm.handleSubmit(async ({ phone: value }) => {
     try {
-      const result = await sendOtp(value, salonSlug);
+      const result = await sendOtp(value, salonSlug, purpose);
       setPhone(value);
       setSeconds(result.expiresIn);
       setDevelopmentOtp(result.developmentOtp);
@@ -74,10 +75,10 @@ export function LoginPage() {
   });
   const submitOtp = otpForm.handleSubmit(async ({ code }) => {
     try {
-      await signIn(phone, code, salonSlug);
+      await signIn(phone, code, salonSlug, purpose);
       const from = (location.state as { from?: { pathname?: string } } | null)
         ?.from?.pathname;
-      navigate(from ?? '/dashboard', { replace: true });
+      navigate(purpose ? '/register-salon' : (from ?? '/dashboard'), { replace: true });
     } catch (error) {
       otpForm.setError('code', {
         message: getApiErrorMessage(error, 'کد واردشده صحیح نیست'),

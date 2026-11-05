@@ -87,3 +87,8 @@ export type Appointment = Prisma.AppointmentModel
  * 
  */
 export type OtpRateLimitEntry = Prisma.OtpRateLimitEntryModel
+/**
+ * Model SalonRegistrationRequest
+ * 
+ */
+export type SalonRegistrationRequest = Prisma.SalonRegistrationRequestModel

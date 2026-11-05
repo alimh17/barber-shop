@@ -410,7 +410,8 @@ export const ModelName = {
   WorkingHour: 'WorkingHour',
   DayOff: 'DayOff',
   Appointment: 'Appointment',
-  OtpRateLimitEntry: 'OtpRateLimitEntry'
+  OtpRateLimitEntry: 'OtpRateLimitEntry',
+  SalonRegistrationRequest: 'SalonRegistrationRequest'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -426,7 +427,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "pushSubscription" | "otpCode" | "salon" | "salonSmsConfig" | "salonMembership" | "customer" | "barber" | "service" | "barberService" | "workingHour" | "dayOff" | "appointment" | "otpRateLimitEntry"
+    modelProps: "user" | "pushSubscription" | "otpCode" | "salon" | "salonSmsConfig" | "salonMembership" | "customer" | "barber" | "service" | "barberService" | "workingHour" | "dayOff" | "appointment" | "otpRateLimitEntry" | "salonRegistrationRequest"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1466,6 +1467,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    SalonRegistrationRequest: {
+      payload: Prisma.$SalonRegistrationRequestPayload<ExtArgs>
+      fields: Prisma.SalonRegistrationRequestFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SalonRegistrationRequestFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonRegistrationRequestPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SalonRegistrationRequestFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonRegistrationRequestPayload>
+        }
+        findFirst: {
+          args: Prisma.SalonRegistrationRequestFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonRegistrationRequestPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SalonRegistrationRequestFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonRegistrationRequestPayload>
+        }
+        findMany: {
+          args: Prisma.SalonRegistrationRequestFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonRegistrationRequestPayload>[]
+        }
+        create: {
+          args: Prisma.SalonRegistrationRequestCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonRegistrationRequestPayload>
+        }
+        createMany: {
+          args: Prisma.SalonRegistrationRequestCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SalonRegistrationRequestCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonRegistrationRequestPayload>[]
+        }
+        delete: {
+          args: Prisma.SalonRegistrationRequestDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonRegistrationRequestPayload>
+        }
+        update: {
+          args: Prisma.SalonRegistrationRequestUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonRegistrationRequestPayload>
+        }
+        deleteMany: {
+          args: Prisma.SalonRegistrationRequestDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SalonRegistrationRequestUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SalonRegistrationRequestUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonRegistrationRequestPayload>[]
+        }
+        upsert: {
+          args: Prisma.SalonRegistrationRequestUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SalonRegistrationRequestPayload>
+        }
+        aggregate: {
+          args: Prisma.SalonRegistrationRequestAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSalonRegistrationRequest>
+        }
+        groupBy: {
+          args: Prisma.SalonRegistrationRequestGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SalonRegistrationRequestGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SalonRegistrationRequestCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SalonRegistrationRequestCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1693,6 +1768,26 @@ export const OtpRateLimitEntryScalarFieldEnum = {
 export type OtpRateLimitEntryScalarFieldEnum = (typeof OtpRateLimitEntryScalarFieldEnum)[keyof typeof OtpRateLimitEntryScalarFieldEnum]
 
 
+export const SalonRegistrationRequestScalarFieldEnum = {
+  id: 'id',
+  applicantId: 'applicantId',
+  reviewedById: 'reviewedById',
+  name: 'name',
+  slug: 'slug',
+  phone: 'phone',
+  address: 'address',
+  description: 'description',
+  status: 'status',
+  rejectionReason: 'rejectionReason',
+  salonId: 'salonId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  reviewedAt: 'reviewedAt'
+} as const
+
+export type SalonRegistrationRequestScalarFieldEnum = (typeof SalonRegistrationRequestScalarFieldEnum)[keyof typeof SalonRegistrationRequestScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1839,6 +1934,20 @@ export type EnumAppointmentStatusFieldRefInput<$PrismaModel> = FieldRefInputType
  * Reference to a field of type 'AppointmentStatus[]'
  */
 export type ListEnumAppointmentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AppointmentStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'SalonRegistrationStatus'
+ */
+export type EnumSalonRegistrationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SalonRegistrationStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'SalonRegistrationStatus[]'
+ */
+export type ListEnumSalonRegistrationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SalonRegistrationStatus[]'>
     
 
 
@@ -2020,6 +2129,7 @@ export type GlobalOmitConfig = {
   dayOff?: Prisma.DayOffOmit
   appointment?: Prisma.AppointmentOmit
   otpRateLimitEntry?: Prisma.OtpRateLimitEntryOmit
+  salonRegistrationRequest?: Prisma.SalonRegistrationRequestOmit
 }
 
 /* Types for Logging */

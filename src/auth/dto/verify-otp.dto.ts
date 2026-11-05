@@ -22,4 +22,9 @@ export class VerifyOtpDto {
   @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
   @IsOptional()
   salonSlug?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^salon-registration$/)
+  purpose?: string;
 }

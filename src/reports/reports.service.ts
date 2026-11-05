@@ -24,14 +24,14 @@ type RevenueRecord = {
   service: { name: string };
   barber: {
     user: {
-      phone: string;
+      phone: string | null;
       firstName: string | null;
       lastName: string | null;
     };
   };
   customer: {
     user: {
-      phone: string;
+      phone: string | null;
       firstName: string | null;
       lastName: string | null;
     };
@@ -279,7 +279,7 @@ export class ReportsService {
       id: string;
       isActive: boolean;
       user: {
-        phone: string;
+        phone: string | null;
         firstName: string | null;
         lastName: string | null;
       };
@@ -328,7 +328,7 @@ export class ReportsService {
       .sort(
         (a, b) =>
           b.revenue - a.revenue ||
-          a.barberName.localeCompare(b.barberName, 'fa'),
+          (a.barberName ?? '').localeCompare(b.barberName ?? '', 'fa'),
       );
 
     const byMonth = this.monthKeys(from, to).map((month) => ({
@@ -460,7 +460,7 @@ export class ReportsService {
   }
 
   private personName(person: {
-    phone: string;
+    phone: string | null;
     firstName: string | null;
     lastName: string | null;
   }) {

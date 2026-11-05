@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes, useParams } from 'react-router-dom';
+import { useAuth } from './auth/auth-context';
 import { AuthProvider } from './auth/AuthContext';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { DashboardLayout } from './components/DashboardLayout';
@@ -7,12 +8,17 @@ import { CreateAppointmentPage } from './pages/CreateAppointmentPage';
 import { CreateBarberPage } from './pages/CreateBarberPage';
 import { CreateSalonPage } from './pages/CreateSalonPage';
 import { CreateServicePage } from './pages/CreateServicePage';
+import { ServicesPage } from './pages/ServicesPage';
 import { CustomersPage } from './pages/CustomersPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
+import { SalonBookingLinkPage } from './pages/SalonBookingLinkPage';
+import { SalonRegistrationPage } from './pages/SalonRegistrationPage';
+import { SalonRegistrationReviewPage } from './pages/SalonRegistrationReviewPage';
 import { CustomerBookingPage } from './pages/CustomerBookingPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { TeamPage } from './pages/TeamPage';
+import { WorkingHoursPage } from './pages/WorkingHoursPage';
 import { SmsSettingsPage } from './pages/SmsSettingsPage';
 import { RevenueReportPage } from './pages/RevenueReportPage';
 import { BarberRevenuePage } from './pages/BarberRevenuePage';
@@ -30,16 +36,27 @@ function SalonEntry() {
   );
 }
 
+function BookingRoute() {
+  const { session } = useAuth();
+  if (session?.user.role === 'CUSTOMER' && session.user.hasSalonMembership !== true) {
+    return <Navigate to="/register-salon" replace />;
+  }
+  return <CustomerBookingPage />;
+}
+
 function App() {
   return (
     <AuthProvider>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register-salon" element={<SalonRegistrationPage />} />
         <Route path="/s/:slug" element={<SalonEntry />} />
         <Route element={<ProtectedRoute allowedRoles={[...dashboardRoles]} />}>
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/salon-link" element={<ProtectedRoute allowedRoles={[...adminRoles]}><SalonBookingLinkPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/salon-registrations" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']}><SalonRegistrationReviewPage /></ProtectedRoute>} />
             <Route
               path="/salons/new"
               element={
@@ -48,6 +65,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/services" element={<ProtectedRoute allowedRoles={[...adminRoles]}><ServicesPage /></ProtectedRoute>} />
             <Route
               path="/services/new"
               element={
@@ -64,6 +82,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/working-hours" element={<ProtectedRoute allowedRoles={[...adminRoles]}><WorkingHoursPage /></ProtectedRoute>} />
             <Route
               path="/team"
               element={
@@ -80,11 +99,11 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="/book" element={<CustomerBookingPage />} />
+            <Route path="/book" element={<BookingRoute />} />
             <Route
               path="/appointments/new"
               element={
-                <ProtectedRoute allowedRoles={[...adminRoles]}>
+                <ProtectedRoute allowedRoles={[...adminRoles, 'BARBER']}>
                   <CreateAppointmentPage />
                 </ProtectedRoute>
               }
