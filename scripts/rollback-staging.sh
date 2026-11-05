@@ -26,5 +26,5 @@ docker compose -p barbershop-api "${FILES[@]}" up -d --no-build --no-deps --wait
 docker exec barbershop-api-nginx-1 nginx -t
 curl -fsS --retry 3 --retry-delay 2 --max-time 15 https://api-staging.barbers-agency.ir/api/health >/dev/null
 curl -fsS --retry 3 --retry-delay 2 --max-time 15 https://staging.barbers-agency.ir/ >/dev/null
-ln -sfn "$OLD_DIR" "$HOME/barbershop-deploy-state/current"
+ln -sfnT "$OLD_DIR" "$HOME/barbershop-deploy-state/current"
 echo "STAGING_ROLLBACK_OK api=$API nginx=$WEB"
