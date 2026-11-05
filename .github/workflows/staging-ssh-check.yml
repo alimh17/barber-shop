@@ -1,0 +1,40 @@
+name: Staging SSH connectivity check
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ssh-check:
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 5
+    steps:
+      - name: Configure pinned SSH connection
+        env:
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.STAGING_KNOWN_HOSTS }}
+          STAGING_HOST: ${{ secrets.STAGING_HOST }}
+          STAGING_USER: ${{ secrets.STAGING_USER }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in SSH_KEY KNOWN_HOSTS STAGING_HOST STAGING_USER; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing environment secret: $name"
+              exit 1
+            fi
+          done
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_staging
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_staging ~/.ssh/known_hosts
+          printf 'STAGING_HOST=%s\nSTAGING_USER=%s\n' "$STAGING_HOST" "$STAGING_USER" >> "$GITHUB_ENV"
+      - name: Check VPS access (read only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -T -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 -i ~/.ssh/id_staging "$STAGING_USER@$STAGING_HOST" 'set -eu; test "$(whoami)" = deploy; test -d /opt/barbershop-api; echo "SSH connectivity and project directory verified"'
+      - name: Clean up key
+        if: always()
+        run: rm -f ~/.ssh/id_staging
