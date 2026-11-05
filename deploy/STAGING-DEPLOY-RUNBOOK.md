@@ -23,7 +23,7 @@ Create the GitHub Environment `staging` and restrict it to `main`. Enable requir
 
 Never put the private key, `.env`, database dump, TLS keys, or server IP into the repository. Add the deploy key's public half to the VPS user's `authorized_keys`. Verify the SSH host fingerprint out of band before setting `STAGING_KNOWN_HOSTS`; do not blindly trust `ssh-keyscan`.
 
-Set repository variable `STAGING_DEPLOY_ENABLED` to `true` **only after** the environment secrets and permissions are verified. Until then, deployments remain disabled. The `CI` workflow runs on pull requests and main; a successful `CI` run on main triggers the staging workflow. A manual `workflow_dispatch` is also available, but still requires the enable flag and the target to equal current `origin/main`.
+Set repository variable `STAGING_DEPLOY_ENABLED` to `true` **only after** the environment secrets and permissions are verified. Until then, deployments remain disabled. The `CI` workflow runs on pull requests and branch pushes; only a successful `CI` run on main triggers the staging workflow. A manual `workflow_dispatch` is also available, but still requires the enable flag and the target to equal current `origin/main`.
 
 GitHub Actions must have permission to read the repository; no write permission or personal access token is needed for deployment. The SSH account must have access to Docker and `/opt/barbershop-api`.
 
