@@ -27,6 +27,13 @@ jobs:
           --health-interval 10s --health-timeout 5s --health-retries 5
     env:
       DATABASE_URL: postgresql://barbershop:barbershop123@localhost:5432/barbershop?schema=public
+      NODE_ENV: test
+      SMS_PROVIDER: mock
+      REDIS_MODE: memory
+      JWT_ACCESS_SECRET: ci-only-access-secret-not-for-deployment
+      JWT_REFRESH_SECRET: ci-only-refresh-secret-not-for-deployment
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
