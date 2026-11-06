@@ -59,6 +59,11 @@ jobs:
         run: |
           docker build --target production -t barbershop-api-api:ci .
           docker build --target web -t barbershop-api-nginx:ci .
+      - name: Branch protection negative test (intentional failure)
+        if: github.event_name == 'pull_request' && github.head_ref == 'test/branch-protection-negative-20261106'
+        run: |
+          echo 'Intentional CI failure to verify main branch protection. Never merge this PR.'
+          exit 1
   isolated-e2e:
     name: Isolated Playwright E2E
     runs-on: ubuntu-latest
