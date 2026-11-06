@@ -67,7 +67,14 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify archive, restore and corruption detection
         run: bash scripts/test-backup-restore-isolated.sh
-  isolated-e2e:
+  rollback-isolated:
+    name: Disposable staging rollback rehearsal
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify rollback success, failure and data safety
+        run: bash scripts/test-rollback-isolated.sh\n  isolated-e2e:
     name: Isolated Playwright E2E
     runs-on: ubuntu-latest
     timeout-minutes: 55
