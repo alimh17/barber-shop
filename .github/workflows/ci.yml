@@ -74,7 +74,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Verify rollback success, failure and data safety
-        run: bash scripts/test-rollback-isolated.sh\n  isolated-e2e:
+        run: bash scripts/test-rollback-isolated.sh
+  isolated-e2e:
     name: Isolated Playwright E2E
     runs-on: ubuntu-latest
     timeout-minutes: 55
