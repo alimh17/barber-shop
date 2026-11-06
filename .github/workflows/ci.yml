@@ -59,6 +59,14 @@ jobs:
         run: |
           docker build --target production -t barbershop-api-api:ci .
           docker build --target web -t barbershop-api-nginx:ci .
+  backup-restore-isolated:
+    name: Disposable PostgreSQL backup and restore
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify archive, restore and corruption detection
+        run: bash scripts/test-backup-restore-isolated.sh
   isolated-e2e:
     name: Isolated Playwright E2E
     runs-on: ubuntu-latest

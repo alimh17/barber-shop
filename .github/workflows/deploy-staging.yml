@@ -65,7 +65,10 @@ jobs:
         with:
           node-version: '22'
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - name: Install dependencies without staging database access
+        env:
+          DATABASE_URL: postgresql://ci_install:unused@127.0.0.1:5432/ci_install?schema=public
+        run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
       - name: Staging read-only browser smoke
         env:
