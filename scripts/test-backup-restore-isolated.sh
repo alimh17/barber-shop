@@ -8,7 +8,7 @@ trap cleanup EXIT
 docker run -d --name "$name" -e POSTGRES_USER=restore_test -e POSTGRES_PASSWORD=local_only -e POSTGRES_DB=restore_test postgres:17-alpine >/dev/null
 ready=0
 for i in $(seq 1 40); do
-  if docker exec "$name" pg_isready -U restore_test -d restore_test >/dev/null 2>&1; then ready=1; break; fi
+  if docker exec "$name" psql -U restore_test -d restore_test -Atqc "SELECT 1" 2>/dev/null | grep -qx 1; then ready=1; break; fi
   sleep 1
 done
 [[ "$ready" == 1 ]] || { echo 'Disposable PostgreSQL failed to start'; exit 1; }
