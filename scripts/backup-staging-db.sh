@@ -4,6 +4,8 @@ umask 077
 # Run on the staging host under a dedicated, least-privilege service account.
 # Writes a new backup; never writes to the database.
 DEST="${BACKUP_DIR:-$HOME/barbershop-deploy-state/daily-backups}"
+DB_CONTAINER="${BACKUP_DB_CONTAINER:-barbershop-api-postgres-1}"
+[[ "$DB_CONTAINER" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]*$ ]] || { echo "Invalid container name" >&2; exit 2; }
 KEEP_DAYS="${BACKUP_KEEP_DAYS:-14}"
 [[ "$KEEP_DAYS" =~ ^[1-9][0-9]*$ ]] || { echo "Invalid retention days" >&2; exit 2; }
 mkdir -p "$DEST"
@@ -16,9 +18,9 @@ complete=0
 cleanup() { if [[ "$complete" != 1 ]]; then rm -rf -- "$tmp"; fi; }
 trap cleanup EXIT
 # Database user/name are read inside the container, not from the shell or CI.
-docker exec barbershop-api-postgres-1 sh -c 'exec pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > "$tmp/postgres.dump"
+docker exec "$DB_CONTAINER" sh -c 'exec pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > "$tmp/postgres.dump"
 test -s "$tmp/postgres.dump"
-docker exec -i barbershop-api-postgres-1 pg_restore -l < "$tmp/postgres.dump" > "$tmp/archive.list"
+docker exec -i "$DB_CONTAINER" pg_restore -l < "$tmp/postgres.dump" > "$tmp/archive.list"
 test -s "$tmp/archive.list"
 (cd "$tmp" && sha256sum postgres.dump archive.list > SHA256SUMS && sha256sum -c SHA256SUMS)
 printf 'created_utc=%s\nformat=pg_dump_custom\n' "$stamp" > "$tmp/metadata.txt"

@@ -66,9 +66,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate disaster recovery scripts
-        run: bash -n scripts/backup-staging-db.sh scripts/verify-backup-restore.sh
+        run: bash -n scripts/backup-staging-db.sh scripts/verify-backup-restore.sh scripts/test-disaster-recovery-isolated.sh
       - name: Verify archive, restore and corruption detection
         run: bash scripts/test-backup-restore-isolated.sh
+      - name: Exercise operational backup and restore on disposable PostgreSQL
+        run: bash scripts/test-disaster-recovery-isolated.sh
   isolated-e2e:
     name: Isolated Playwright E2E
     runs-on: ubuntu-latest
