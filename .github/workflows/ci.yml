@@ -59,3 +59,46 @@ jobs:
         run: |
           docker build --target production -t barbershop-api-api:ci .
           docker build --target web -t barbershop-api-nginx:ci .
+  isolated-e2e:
+    name: Isolated Playwright E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      CI: 'true'
+      E2E_ISOLATED: '1'
+      E2E_DB_PASSWORD: ci-only-e2e-database-password
+      E2E_REDIS_PASSWORD: ci-only-e2e-redis-password
+      E2E_JWT_ACCESS_SECRET: ci-only-e2e-access-secret-never-use-in-production
+      E2E_JWT_REFRESH_SECRET: ci-only-e2e-refresh-secret-never-use-in-production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.9.1
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Build isolated API, frontend and migration images
+        run: |
+          docker build --target production -t barbershop-api-api:latest .
+          docker build --target web -t barbershop-api-nginx:latest .
+          docker build --target build -t barbershop-api-migrate:latest .
+      - name: Run all Playwright suites with fresh E2E database per suite
+        run: bash scripts/run-ci-isolated-e2e.sh
+      - name: Upload E2E results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: isolated-playwright-evidence
+          path: |
+            e2e-ci-results/
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
